@@ -6,6 +6,11 @@
   <title>Hospital São José — Centro Cirúrgico & Regulação</title>
   <script src="https://cdn.jsdelivr.net/npm/exceljs@4.3.0/dist/exceljs.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+  
+  <!-- SDK do Firebase via CDN -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
   <style>
     :root {
       --primary: #1E3A8A;
@@ -411,7 +416,7 @@
           </div>
         </div>
 
-        <!-- FILTROS AVANÇADOS DE PERÍODO E MÉDICO NO MAPA (APARECEM APENAS NO ACUMULADO MENSAL) -->
+        <!-- FILTROS AVANÇADOS DE PERÍODO E MÉDICO NO MAPA -->
         <div id="filtros-avancados-mensal" style="display: none; gap: 1rem; margin-bottom: 1.25rem; align-items: center; background: #FFF; padding: 0.85rem 1.2rem; border-radius: 12px; border: 1.5px solid var(--border-dark); flex-wrap: wrap;">
           <strong style="font-size: 0.85rem; color: var(--primary);">FILTROS ESCALA MENSAL:</strong>
           <div style="display: flex; gap: 0.4rem; align-items: center;">
@@ -823,7 +828,21 @@
   </div>
 
   <script>
-    // BASE DE DADOS COMPLETA COM VALDEILTON, FERNANDO ROCHA, PAULO HENRIQUE E OS DEMAIS PACIENTES DA PLANILHA
+    // Configuração do Firebase (filadecirurgias)
+    const firebaseConfig = {
+      apiKey: "AIzaSyAVwfSd8g4kB5vyyK2lEPGKhn6ABcu9ilE",
+      authDomain: "filadecirurgias.firebaseapp.com",
+      projectId: "filadecirurgias",
+      storageBucket: "filadecirurgias.firebasestorage.app",
+      messagingSenderId: "548204562455",
+      appId: "1:548204562455:web:9762dde7d49c7288767452",
+      measurementId: "G-GZE9VE0NB7"
+    };
+
+    // Inicializar Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
     const PACIENTES_INICIAIS = [
       {"id": "F_474", "nome": "VALDEILTON FERREIRA DA SILVA", "ids": "987617934", "cpf": "031.016.805-81", "contato": "(79) 98920-736", "dt_aih": "30/09/2026", "dt_ids": "30/09/2026", "procedimento": "TRATAMENTO CIRURGICO DE FRATURA DIAFISARIA UNICA DO RADIO / DA ULNA", "cod_procedimento": "04.08.01.015", "tp_solicitacao": "AIH", "especialidade": "ORTOPEDIA", "medico": "CARLOS KAKUDA", "dn": "04/12/1980", "mes_autorizacao": "OUTUBRO", "dt_programacao": "", "solicitar_revalidacao": "", "situacao_paciente": "AGUARDANDO ATENDIMENTO", "situacao_solicitacao": "ATIVO", "dt_remarcacao": "", "dt_cirurgia": "", "suspensao_obs": "", "responsavel": "Equipe"},
       {"id": "F_473", "nome": "FERNANDO ROCHA DE SOUZA", "ids": "987637554", "cpf": "059.645.885-14", "contato": "(79) 98144-6912", "dt_aih": "30/09/2026", "dt_ids": "30/09/2026", "procedimento": "TRATAMENTO CIRURGICO DE FRATURA DIAFISARIA UNICA DO RADIO / DA ULNA", "cod_procedimento": "04.08.02.043", "tp_solicitacao": "AIH", "especialidade": "ORTOPEDIA", "medico": "CARLOS KAKUDA", "dn": "16/08/1993", "mes_autorizacao": "OUTUBRO", "dt_programacao": "", "solicitar_revalidacao": "", "situacao_paciente": "AGUARDANDO ATENDIMENTO", "situacao_solicitacao": "ATIVO", "dt_remarcacao": "", "dt_cirurgia": "", "suspensao_obs": "", "responsavel": "Equipe"},
@@ -869,27 +888,73 @@
         { id: 'indicadores-prazos', nome: '📊 INDICADORES DE PRAZOS', visivel: true }
       ],
 
-      get fila() { return JSON.parse(localStorage.getItem('hsj_fila')) || PACIENTES_INICIAIS; },
-      set fila(val) { localStorage.setItem('hsj_fila', JSON.stringify(val)); },
+      // Sincronização Global Direta com o Firestore (Cloud First)
+      get fila() { return window._cacheFila || PACIENTES_INICIAIS; },
+      set fila(val) { 
+        window._cacheFila = val;
+        db.collection("centro_cirurgico").doc("dados_app").set({
+          fila: val,
+          salas: this.salas,
+          suspensas: this.cirurgiasSuspensas,
+          realizadas: this.cirurgiasRealizadas,
+          historicoMov: this.historicoMov
+        }, { merge: true }).catch(err => console.error("Erro ao sincronizar com o Firebase:", err));
+      },
 
-      get cirurgiasSuspensas() { return JSON.parse(localStorage.getItem('hsj_suspensas')) || []; },
-      set cirurgiasSuspensas(val) { localStorage.setItem('hsj_suspensas', JSON.stringify(val)); },
+      get cirurgiasSuspensas() { return window._cacheSuspensas || []; },
+      set cirurgiasSuspensas(val) { 
+        window._cacheSuspensas = val;
+        db.collection("centro_cirurgico").doc("dados_app").set({
+          fila: this.fila,
+          salas: this.salas,
+          suspensas: val,
+          realizadas: this.cirurgiasRealizadas,
+          historicoMov: this.historicoMov
+        }, { merge: true }).catch(err => console.error(err));
+      },
 
-      get cirurgiasRealizadas() { return JSON.parse(localStorage.getItem('hsj_realizadas')) || []; },
-      set cirurgiasRealizadas(val) { localStorage.setItem('hsj_realizadas', JSON.stringify(val)); },
+      get cirurgiasRealizadas() { return window._cacheRealizadas || []; },
+      set cirurgiasRealizadas(val) { 
+        window._cacheRealizadas = val;
+        db.collection("centro_cirurgico").doc("dados_app").set({
+          fila: this.fila,
+          salas: this.salas,
+          suspensas: this.cirurgiasSuspensas,
+          realizadas: val,
+          historicoMov: this.historicoMov
+        }, { merge: true }).catch(err => console.error(err));
+      },
 
-      get historicoMov() { return JSON.parse(localStorage.getItem('hsj_historico_mov')) || []; },
-      set historicoMov(val) { localStorage.setItem('hsj_historico_mov', JSON.stringify(val)); },
+      get historicoMov() { return window._cacheHistorico || []; },
+      set historicoMov(val) { 
+        window._cacheHistorico = val;
+        db.collection("centro_cirurgico").doc("dados_app").set({
+          fila: this.fila,
+          salas: this.salas,
+          suspensas: this.cirurgiasSuspensas,
+          realizadas: this.cirurgiasRealizadas,
+          historicoMov: val
+        }, { merge: true }).catch(err => console.error(err));
+      },
 
       get salas() { 
-        return JSON.parse(localStorage.getItem('hsj_salas')) || { "Sala 01": [], "Sala 02": [], "Sala 03": [], "Sala 04": [] }; 
+        return window._cacheSalas || { "Sala 01": [], "Sala 02": [], "Sala 03": [], "Sala 04": [] }; 
       },
-      set salas(val) { localStorage.setItem('hsj_salas', JSON.stringify(val)); },
+      set salas(val) { 
+        window._cacheSalas = val;
+        db.collection("centro_cirurgico").doc("dados_app").set({
+          fila: this.fila,
+          salas: val,
+          suspensas: this.cirurgiasSuspensas,
+          realizadas: this.cirurgiasRealizadas,
+          historicoMov: this.historicoMov
+        }, { merge: true }).catch(err => console.error(err));
+      },
 
       pacienteTransferencia: null,
 
       registrarHistorico(profissional, acao, detalhes) {
-        let hist = this.historicoMov;
+        let hist = [...this.historicoMov];
         const agora = new Date().toLocaleString('pt-BR');
         hist.unshift({
           dataHora: agora,
@@ -903,9 +968,35 @@
       init() {
         this.atualizarDatalists();
         this.renderizarAbasDinamicas();
-        this.atualizarTabelaFila();
-        this.atualizarTabelaAgendadas();
-        this.atualizarVisaoGeral();
+        
+        // Ouvinte em tempo real unificado do Firestore (qualquer alteração em qualquer PC atualiza a tela na hora)
+        db.collection("centro_cirurgico").doc("dados_app").onSnapshot((doc) => {
+          if (doc.exists) {
+            const data = doc.data();
+            if (data.fila) window._cacheFila = data.fila;
+            if (data.salas) window._cacheSalas = data.salas;
+            if (data.suspensas) window._cacheSuspensas = data.suspensas;
+            if (data.realizadas) window._cacheRealizadas = data.realizadas;
+            if (data.historicoMov) window._cacheHistorico = data.historicoMov;
+
+            this.atualizarTabelaFila();
+            this.atualizarTabelaAgendadas();
+            this.atualizarTabelaSuspensas();
+            this.atualizarTabelaRealizadas();
+            this.atualizarTabelaHistoricoMov();
+            this.atualizarVisaoGeral();
+          } else {
+            // Se o documento estiver vazio na nuvem, inicializa com os dados padrão no Firestore
+            db.collection("centro_cirurgico").doc("dados_app").set({
+              fila: PACIENTES_INICIAIS,
+              salas: { "Sala 01": [], "Sala 02": [], "Sala 03": [], "Sala 04": [] },
+              suspensas: [],
+              realizadas: [],
+              historicoMov: []
+            });
+          }
+        });
+
         const dataInput = document.getElementById('mapa-filtro-data');
         if (dataInput) dataInput.value = this.dataReferenciaMapa;
       },
@@ -1450,7 +1541,6 @@
         const [ano, mes, dia] = data.split('-');
         const dtFmt = `${dia}/${mes}/${ano}`;
 
-        // VALIDAÇÃO INTELIGENTE DE DUPLICIDADE DE PACIENTE NO MESMO DIA
         let currentSalas = this.salas;
         let jaAgendadoMesmoDia = false;
         Object.keys(currentSalas).forEach(sName => {
@@ -1483,10 +1573,10 @@
           responsavel: nomeProfissional.trim()
         };
 
-        currentSalas[sala].push(copia);
-        this.salas = currentSalas;
+        let copySalas = JSON.parse(JSON.stringify(this.salas));
+        copySalas[sala].push(copia);
+        this.salas = copySalas;
 
-        // O PACIENTE SAI DA FILA DE ESPERA E VAI PARA A DE AGENDADAS (através do Mapa/Salas)
         this.fila = this.fila.filter(x => x.id !== this.pacienteTransferencia.id);
         this.registrarHistorico(nomeProfissional.trim(), "Agendamento no Mapa", `Paciente ${copia.nome} escalado na ${sala} para ${dtFmt}`);
 
@@ -1517,7 +1607,7 @@
           return;
         }
 
-        let currentSalas = this.salas;
+        let currentSalas = JSON.parse(JSON.stringify(this.salas));
         const pac = currentSalas[sala][idx];
         if (!pac) return;
 
@@ -1526,12 +1616,10 @@
 
         if (!confirm(`⚠️ Confirmação:\nDeseja suspender a cirurgia de "${pac.nome}"?`)) return;
 
-        // Remove do mapa de salas
         currentSalas[sala].splice(idx, 1);
         this.salas = currentSalas;
 
-        // Adiciona nas suspensas
-        let tempSusp = this.cirurgiasSuspensas;
+        let tempSusp = [...this.cirurgiasSuspensas];
         tempSusp.unshift({
           id: 'SUSP_' + Date.now().toString().slice(-6),
           data: pac.dt_cirurgia || new Date().toLocaleDateString('pt-BR'),
@@ -1572,7 +1660,7 @@
         const pParts = dtVal.split('-');
         const dtFmt = pParts.length === 3 ? `${pParts[2]}/${pParts[1]}/${pParts[0]}` : dtVal;
 
-        let tempSusp = this.cirurgiasSuspensas;
+        let tempSusp = [...this.cirurgiasSuspensas];
         tempSusp.unshift({
           id: 'SUSP_' + Date.now().toString().slice(-6),
           data: dtFmt,
@@ -1631,7 +1719,7 @@
           return;
         }
 
-        let currentSalas = this.salas;
+        let currentSalas = JSON.parse(JSON.stringify(this.salas));
         const pac = currentSalas[sala][idx];
         if (!pac) return;
         if (!confirm(`⚠️ Confirmação:\nDeseja confirmar que a cirurgia de "${pac.nome}" ACONTECEU e marcá-la como REALIZADA?`)) return;
@@ -1639,7 +1727,7 @@
         currentSalas[sala].splice(idx, 1);
         this.salas = currentSalas;
 
-        let tempReal = this.cirurgiasRealizadas;
+        let tempReal = [...this.cirurgiasRealizadas];
         tempReal.unshift({
           ...pac,
           salaRealizacao: sala,
@@ -1710,8 +1798,7 @@
         const [ano, mes, dia] = dataVal.split('-');
         const dtFmt = `${dia}/${mes}/${ano}`;
 
-        // VALIDAÇÃO INTELIGENTE DE DUPLICIDADE DE PACIENTE NO MESMO DIA
-        let currentSalas = this.salas;
+        let currentSalas = JSON.parse(JSON.stringify(this.salas));
         let jaAgendadoMesmoDia = false;
         Object.keys(currentSalas).forEach(sName => {
           (currentSalas[sName] || []).forEach(item => {
@@ -1836,7 +1923,7 @@
           return;
         }
 
-        let currentSalas = this.salas;
+        let currentSalas = JSON.parse(JSON.stringify(this.salas));
         const pac = currentSalas[sala][idx];
         if (!pac) return;
         if (!confirm(`⚠️ Confirmação:\nDeseja devolver "${pac.nome}" para a fila de espera?`)) return;
@@ -1844,7 +1931,7 @@
         currentSalas[sala].splice(idx, 1);
         this.salas = currentSalas;
 
-        let tempFila = this.fila;
+        let tempFila = [...this.fila];
         tempFila.unshift({
           ...pac,
           situacao_paciente: 'SOLICITADO',
@@ -1960,7 +2047,7 @@
 
       retirarPacienteDoMapa(sala, idx) {
         if (!confirm('⚠️ Atenção:\nDeseja realmente retirar este paciente da sala permanentemente?')) return;
-        let currentSalas = this.salas;
+        let currentSalas = JSON.parse(JSON.stringify(this.salas));
         currentSalas[sala].splice(idx, 1);
         this.salas = currentSalas;
         this.atualizarSalaAtual();
