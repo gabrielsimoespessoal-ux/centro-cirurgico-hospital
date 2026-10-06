@@ -75,16 +75,13 @@ function triageControlV4(k,type,val){
  if(type==='check')return `<label class="check"><input id="t_${k}" type="checkbox" ${val===true||val==='SIM'?'checked':''}> Confirmado</label>`;
  return `<textarea id="t_${k}">${esc(val||'')}</textarea>`;
 }
-function triageTemplateV4(){
- return `<div style="margin:14px 0 18px"><div class="notice"><b>Roteiro da Triagem de Enfermagem</b><br>Este checklist será preenchido individualmente em cada paciente ao clicar em “☎ Entrevista”. Alteração nos tópicos 1 ou 2 encaminha automaticamente para Avaliação do Enfermeiro.</div>${triageGroupsV4.map(g=>`<div style="border:1px solid #d7e0ea;border-radius:10px;padding:14px;margin-bottom:10px;background:#fff"><h3 style="margin:0 0 10px;color:#1f3f8f;font-size:15px">${g.title}</h3>${g.qs.map(([k,q,t])=>`<div style="padding:6px 0;border-bottom:1px solid #eef2f7;font-size:12px">☐ ${esc(q)}</div>`).join('')}${g.alterKey?`<div style="margin-top:8px;font-size:12px;color:#b45309"><b>⚠ Verificar se houve alteração neste tópico.</b></div>`:''}</div>`).join('')}</div>`;
-}
 renderTriage=function(){
  const rows=stageRows('entrevista_tecnico');
- document.getElementById('content').innerHTML=`<section class="card"><div class="section-head"><div><h2>☎ Triagem de Enfermagem</h2><div class="sub">Entrevista estruturada com rastreabilidade do profissional</div></div></div>${triageTemplateV4()}<div class="tablewrap"><table class="table"><thead><tr><th class="actions">AÇÕES</th><th>PACIENTE</th><th>MÉDICO</th><th>PROCEDIMENTO</th><th>ENTREVISTADOR</th><th>DATA/HORA</th><th>JUSTIFICATIVA AO ENFERMEIRO</th></tr></thead><tbody>${rows.map(x=>`<tr><td>${actionButtons(x)} <button class="btn small" onclick="editTriage('${x.id}')">☎ Entrevista</button></td><td><b>${esc(x.patient_name)}</b></td><td>${esc(x.surgeon||'')}</td><td>${esc(x.procedure_name||'')}</td><td>${esc(x.triage_by?'Registrado':'')}</td><td>${esc(x.triage_at||'')}</td><td>${esc(x.nurse_referral_reason||'')}</td></tr>`).join('')||'<tr><td colspan="7" style="text-align:center;padding:28px">Nenhum paciente nesta etapa.</td></tr>'}</tbody></table></div></section>`;
+ document.getElementById('content').innerHTML=`<section class="card"><div class="section-head"><div><h2>☎ Triagem de Enfermagem</h2><div class="sub">A triagem é individual e sempre vinculada a um paciente desta etapa.</div></div></div><div class="notice">Clique em <b>☎ Entrevista</b> no paciente para abrir e preencher o checklist de triagem.</div><div class="tablewrap"><table class="table"><thead><tr><th class="actions">AÇÕES</th><th>PACIENTE</th><th>MÉDICO</th><th>PROCEDIMENTO</th><th>ENTREVISTADOR</th><th>DATA/HORA</th><th>JUSTIFICATIVA AO ENFERMEIRO</th></tr></thead><tbody>${rows.map(x=>`<tr><td>${actionButtons(x)} <button class="btn small" onclick="editTriage('${x.id}')">☎ Entrevista</button></td><td><b>${esc(x.patient_name)}</b></td><td>${esc(x.surgeon||'')}</td><td>${esc(x.procedure_name||'')}</td><td>${esc(x.triage_by?'Registrado':'')}</td><td>${esc(x.triage_at||'')}</td><td>${esc(x.nurse_referral_reason||'')}</td></tr>`).join('')||'<tr><td colspan="7" style="text-align:center;padding:28px">Nenhum paciente nesta etapa.</td></tr>'}</tbody></table></div></section>`;
 };
 editTriage=function(id){
  let x=S.rows.find(r=>r.id===id),a=x.triage_answers||{};
- document.getElementById('modal').innerHTML=`<div class="back"><div class="modal"><div class="mh"><b>☎ Triagem de Enfermagem: ${esc(x.patient_name)}</b><button class="btn" onclick="document.getElementById('modal').innerHTML=''">Fechar</button></div><div class="mb"><div class="notice"><b>Regra automática:</b> se houver alteração no tópico 1 ou 2, o paciente será encaminhado diretamente para Avaliação do Enfermeiro.</div>${triageGroupsV4.map(g=>`<div style="border:1px solid #d7e0ea;border-radius:10px;padding:14px;margin-bottom:14px"><h3 style="margin:0 0 12px;color:#1f3f8f">${g.title}</h3>${g.qs.map(([k,q,t])=>`<div class="field" style="margin-bottom:10px"><label>${q}</label>${triageControlV4(k,t,a[k])}</div>`).join('')}${g.alterKey?`<div class="field" style="margin-top:10px"><label style="color:#b45309">⚠ Alteração identificada neste tópico?</label><select id="t_${g.alterKey}"><option value="NÃO" ${a[g.alterKey]!=='SIM'?'selected':''}>NÃO</option><option value="SIM" ${a[g.alterKey]==='SIM'?'selected':''}>SIM</option></select></div>`:''}</div>`).join('')}<div class="field"><label>Observações da triagem</label><textarea id="t_notes">${esc(x.triage_notes||'')}</textarea></div><div class="field" style="margin-top:12px"><label>Justificativa para encaminhar ao enfermeiro</label><textarea id="t_reason">${esc(x.nurse_referral_reason||'')}</textarea></div></div><div class="mf"><button class="btn" onclick="saveTriageV4('${id}',false)">Salvar triagem</button><button class="btn green" onclick="saveTriageV4('${id}',true)">Encaminhar para o Enfermeiro</button></div></div></div>`;
+ document.getElementById('modal').innerHTML=`<div class="back"><div class="modal"><div class="mh"><b>☎ Triagem de Enfermagem: ${esc(x.patient_name)}</b><button class="btn" onclick="document.getElementById('modal').innerHTML=''">Fechar</button></div><div class="mb"><div class="notice"><b>Paciente:</b> ${esc(x.patient_name)} &nbsp; <b>CPF:</b> ${esc(x.cpf||'—')} &nbsp; <b>IDS:</b> ${esc(x.ids||'—')}<br><b>Regra automática:</b> se houver alteração no tópico 1 ou 2, o paciente será encaminhado diretamente para Avaliação do Enfermeiro.</div>${triageGroupsV4.map(g=>`<div style="border:1px solid #d7e0ea;border-radius:10px;padding:14px;margin-bottom:14px"><h3 style="margin:0 0 12px;color:#1f3f8f">${g.title}</h3>${g.qs.map(([k,q,t])=>`<div class="field" style="margin-bottom:10px"><label>${q}</label>${triageControlV4(k,t,a[k])}</div>`).join('')}${g.alterKey?`<div class="field" style="margin-top:10px"><label style="color:#b45309">⚠ Alteração identificada neste tópico?</label><select id="t_${g.alterKey}"><option value="NÃO" ${a[g.alterKey]!=='SIM'?'selected':''}>NÃO</option><option value="SIM" ${a[g.alterKey]==='SIM'?'selected':''}>SIM</option></select></div>`:''}</div>`).join('')}<div class="field"><label>Observações da triagem</label><textarea id="t_notes">${esc(x.triage_notes||'')}</textarea></div><div class="field" style="margin-top:12px"><label>Justificativa para encaminhar ao enfermeiro</label><textarea id="t_reason">${esc(x.nurse_referral_reason||'')}</textarea></div></div><div class="mf"><button class="btn" onclick="saveTriageV4('${id}',false)">Salvar triagem</button><button class="btn green" onclick="saveTriageV4('${id}',true)">Encaminhar para o Enfermeiro</button></div></div></div>`;
 };
 saveTriageV4=async function(id,manualForward){
  let answers={};
@@ -101,7 +98,43 @@ saveTriageV4=async function(id,manualForward){
 };
 saveTriage=saveTriageV4;
 
+const examListV5=[
+ 'Tomografia de Abdômen','Tomografia de Tórax','Tomografia de Pelve','Tomografia de Crânio',
+ 'Raio X de Tórax','Raio X de Membros','Raio X de Abdômen',
+ 'Hemograma','Coagulograma','Glicemia em Jejum','Creatinina','Ureia','ECG','ECOTT','Holter','Outros'
+];
+function normalizeExamV5(raw){
+ if(raw && typeof raw==='object' && ('status' in raw || 'alteracao' in raw))return {status:raw.status||'',alteracao:raw.alteracao||''};
+ if(raw===true)return {status:'REALIZADO',alteracao:'NÃO'};
+ return {status:'',alteracao:''};
+}
+function examRowV5(name,i,data){
+ const v=normalizeExamV5(data);
+ const safeId='ev5_'+i;
+ return `<tr><td><b>${esc(name)}</b>${name==='Outros'?`<div style="margin-top:6px"><input id="ex_other_name" placeholder="Digite o outro exame" value="${esc((data&&data.nome)||'')}" style="width:100%;padding:7px;border:1px solid #c9d6e6;border-radius:6px"></div>`:''}</td><td><select id="${safeId}_status" onchange="toggleExamAlterV5(${i})"><option value=""></option><option value="REALIZADO" ${v.status==='REALIZADO'?'selected':''}>REALIZADO</option><option value="NÃO REALIZADO" ${v.status==='NÃO REALIZADO'?'selected':''}>NÃO REALIZADO</option><option value="PENDENTE" ${v.status==='PENDENTE'?'selected':''}>PENDENTE</option></select></td><td><select id="${safeId}_alter" ${v.status==='REALIZADO'?'':'disabled'}><option value=""></option><option value="NÃO" ${v.alteracao==='NÃO'?'selected':''}>SEM ALTERAÇÃO</option><option value="SIM" ${v.alteracao==='SIM'?'selected':''}>COM ALTERAÇÃO</option></select></td></tr>`;
+}
+toggleExamAlterV5=function(i){const st=document.getElementById('ev5_'+i+'_status'),al=document.getElementById('ev5_'+i+'_alter');if(!st||!al)return;al.disabled=st.value!=='REALIZADO';if(al.disabled)al.value='';};
+renderExams=function(){
+ const rows=stageRows('exames');
+ document.getElementById('content').innerHTML=`<section class="card"><div class="section-head"><div><h2>🧪 Exames (NIR)</h2><div class="sub">Checklist individual de exames por paciente</div></div></div><div class="notice">Clique em <b>🧪 Exames</b> no paciente. Cada exame pode ser marcado como Realizado, Não realizado ou Pendente. Se realizado, é possível informar se houve alteração.</div><div class="tablewrap"><table class="table"><thead><tr><th class="actions">AÇÕES</th><th>PACIENTE</th><th>MÉDICO</th><th>PROCEDIMENTO</th><th>PENDÊNCIA</th><th>ÚLTIMO REGISTRO</th><th>OBSERVAÇÕES</th></tr></thead><tbody>${rows.map(x=>{const ck=x.exam_checklist||{},meta=ck.__meta||{};return `<tr><td>${actionButtons(x)} <button class="btn small" onclick="editExams('${x.id}')">🧪 Exames</button></td><td><b>${esc(x.patient_name)}</b></td><td>${esc(x.surgeon||'')}</td><td>${esc(x.procedure_name||'')}</td><td>${x.exam_pending?'<span class="pill bad">SIM</span>':'<span class="pill ok">NÃO</span>'}</td><td>${esc(meta.registered_by||'')} ${meta.registered_at?'<br><span class="sub">'+esc(new Date(meta.registered_at).toLocaleString('pt-BR'))+'</span>':''}</td><td>${esc(x.exam_observations||'')}</td></tr>`}).join('')||'<tr><td colspan="7" style="text-align:center;padding:28px">Nenhum paciente nesta etapa.</td></tr>'}</tbody></table></div></section>`;
+};
+editExams=function(id){
+ const x=S.rows.find(r=>r.id===id),ck=x.exam_checklist||{},meta=ck.__meta||{};
+ const loginAtual=S.profile?.full_name||jwt().email||'Usuário logado';
+ document.getElementById('modal').innerHTML=`<div class="back"><div class="modal"><div class="mh"><b>🧪 Exames: ${esc(x.patient_name)}</b><button class="btn" onclick="document.getElementById('modal').innerHTML=''">Fechar</button></div><div class="mb"><div class="notice"><b>Paciente:</b> ${esc(x.patient_name)} &nbsp; <b>CPF:</b> ${esc(x.cpf||'—')} &nbsp; <b>IDS:</b> ${esc(x.ids||'—')}</div><div class="tablewrap"><table class="table" style="min-width:760px"><thead><tr><th>EXAME</th><th>STATUS</th><th>SE REALIZADO</th></tr></thead><tbody>${examListV5.map((e,i)=>examRowV5(e,i,ck[e])).join('')}</tbody></table></div><div class="field" style="margin-top:14px"><label>Observações</label><textarea id="f_exam_observations" rows="5">${esc(x.exam_observations||'')}</textarea></div><div class="dj-note" style="margin-top:10px"><b>Registro:</b> ${esc(meta.registered_by||loginAtual)}${meta.registered_at?' — '+esc(new Date(meta.registered_at).toLocaleString('pt-BR')):''}<br><span class="sub">Ao salvar, o login e a data/hora do profissional que realizou este registro serão atualizados automaticamente.</span></div></div><div class="mf"><button class="btn primary" onclick="saveExamsV5('${id}')">Salvar exames</button></div></div></div>`;
+};
+saveExamsV5=async function(id){
+ const ck={}; let pending=false;
+ examListV5.forEach((e,i)=>{const st=document.getElementById('ev5_'+i+'_status').value||'',al=document.getElementById('ev5_'+i+'_alter').value||'';if(st==='PENDENTE')pending=true;ck[e]={status:st,alteracao:st==='REALIZADO'?al:''};if(e==='Outros')ck[e].nome=(document.getElementById('ex_other_name')?.value||'').trim()});
+ const login=S.profile?.full_name||jwt().email||uid||'Usuário logado';
+ ck.__meta={registered_by:login,registered_by_id:uid,registered_at:new Date().toISOString()};
+ const d={exam_checklist:ck,exam_other:ck['Outros']?.nome||null,exam_pending:pending,exam_observations:document.getElementById('f_exam_observations').value||null,updated_by:uid};
+ await api('/rest/v1/surgeries?id=eq.'+id,{method:'PATCH',body:JSON.stringify(d)});
+ document.getElementById('modal').innerHTML='';await load();renderExams();
+};
+saveExams=saveExamsV5;
+
 const oldRenderCurrentV4=renderCurrent;
-renderCurrent=function(){if(S.view==='pendencias')return renderPendencias();if(S.view==='entrevista_tecnico')return renderTriage();return oldRenderCurrentV4()};
+renderCurrent=function(){if(S.view==='pendencias')return renderPendencias();if(S.view==='entrevista_tecnico')return renderTriage();if(S.view==='exames')return renderExams();return oldRenderCurrentV4()};
 forceTabsV4();renderCurrent();
 })();
