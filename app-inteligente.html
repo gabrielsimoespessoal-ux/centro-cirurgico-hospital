@@ -3,17 +3,42 @@ const frame=document.getElementById('appFrame');
 frame.addEventListener('load',()=>{
   const w=frame.contentWindow;
   try{
+    const style=w.document.createElement('style');
+    style.textContent=`
+      .smart-wrap{position:relative}.smart-row{display:flex;width:100%}.smart-row input{flex:1;min-width:0;border-radius:7px 0 0 7px!important}.smart-arrow{width:38px;border:1px solid #c9d6e6;border-left:0;background:#eef3fa;color:#1f3f8f;border-radius:0 7px 7px 0;font-weight:900;cursor:pointer}.smart-arrow:hover{background:#dfe9f6}.smart-menu{display:none;position:absolute;left:0;right:0;top:100%;z-index:100;background:white;border:1px solid #b9c9de;border-radius:7px;box-shadow:0 8px 22px #10294a26;max-height:220px;overflow:auto;margin-top:3px}.smart-menu.open{display:block}.smart-option{padding:9px 10px;font-size:12px;cursor:pointer;border-bottom:1px solid #edf1f6}.smart-option:hover{background:#eef5ff}.smart-option:last-child{border-bottom:0}.smart-empty{padding:10px;color:#64748b;font-size:12px}.smart-hint{color:#64748b;font-size:10px;margin-top:3px}`;
+    w.document.head.appendChild(style);
     w.eval(`
       function smartOptions(key){
         return [...new Set(S.rows.map(x=>String(x[key]||'').trim()).filter(Boolean))]
           .sort((a,b)=>a.localeCompare(b,'pt-BR'));
       }
+      function smartMenuHtml(id,key,query=''){
+        const q=String(query||'').trim().toLowerCase();
+        const opts=smartOptions(key).filter(o=>!q||o.toLowerCase().includes(q));
+        return opts.length?opts.map(o=>\`<div class="smart-option" onmousedown="selectSmart('f_\${id}',\${JSON.stringify(o)})">\${esc(o)}</div>\`).join(''):'<div class="smart-empty">Nenhuma opção encontrada. Digite um novo valor e salve.</div>';
+      }
+      function toggleSmart(id,key){
+        document.querySelectorAll('.smart-menu.open').forEach(m=>{if(m.id!=='menu_'+id)m.classList.remove('open')});
+        const menu=document.getElementById('menu_'+id),inp=document.getElementById('f_'+id);
+        if(!menu)return;
+        menu.innerHTML=smartMenuHtml(id,key,inp?.value||'');
+        menu.classList.toggle('open');
+        if(menu.classList.contains('open'))inp?.focus();
+      }
+      function filterSmart(id,key){
+        const menu=document.getElementById('menu_'+id),inp=document.getElementById('f_'+id);
+        if(!menu)return;
+        menu.innerHTML=smartMenuHtml(id,key,inp?.value||'');
+        menu.classList.add('open');
+      }
+      function selectSmart(inputId,value){
+        const inp=document.getElementById(inputId);if(inp){inp.value=value;inp.dispatchEvent(new Event('input',{bubbles:true}))}
+        const menu=document.getElementById('menu_'+inputId.replace('f_',''));if(menu)menu.classList.remove('open');
+      }
       function field(label,id,val='',type='text',cls=''){
         const smartKey=id==='surgeon'?'surgeon':id==='procedure_name'?'procedure_name':null;
         if(smartKey && type==='text'){
-          const listId='smart_'+id;
-          const opts=smartOptions(smartKey);
-          return \`<div class="field \${cls}"><label>\${label}</label><input id="f_\${id}" type="text" list="\${listId}" value="\${esc(val||'')}" autocomplete="off" placeholder="Escolha na lista ou digite um novo"><datalist id="\${listId}">\${opts.map(o=>\`<option value="\${esc(o)}"></option>\`).join('')}</datalist><div class="sub">⌄ Escolha um existente ou digite um novo. Novos valores passam a aparecer automaticamente.</div></div>\`;
+          return \`<div class="field \${cls} smart-wrap"><label>\${label}</label><div class="smart-row"><input id="f_\${id}" type="text" value="\${esc(val||'')}" autocomplete="off" placeholder="Selecione ou digite um novo" oninput="filterSmart('\${id}','\${smartKey}')" onfocus="filterSmart('\${id}','\${smartKey}')" onblur="setTimeout(()=>document.getElementById('menu_\${id}')?.classList.remove('open'),180)"><button type="button" class="smart-arrow" tabindex="-1" onclick="toggleSmart('\${id}','\${smartKey}')">▼</button></div><div id="menu_\${id}" class="smart-menu">\${smartMenuHtml(id,smartKey,val||'')}</div><div class="smart-hint">Escolha pela seta ou digite um novo. Depois de salvo, o novo valor passa a integrar a lista.</div></div>\`;
         }
         return \`<div class="field \${cls}"><label>\${label}</label><input id="f_\${id}" type="\${type}" value="\${esc(val||'')}"></div>\`;
       }
@@ -25,12 +50,7 @@ frame.addEventListener('load',()=>{
         document.getElementById('gfSpecialty').innerHTML='<option value="">Especialidade</option>'+spec.map(x=>\`<option>\${esc(x)}</option>\`).join('');
         document.getElementById('gfStatus').innerHTML='<option value="">Situação</option>'+patientStatuses.map(x=>\`<option>\${x}</option>\`).join('');
         const gp=document.getElementById('gfProcedure');
-        if(gp){
-          gp.setAttribute('list','gfProcedureList');
-          let dl=document.getElementById('gfProcedureList');
-          if(!dl){dl=document.createElement('datalist');dl.id='gfProcedureList';gp.after(dl)}
-          dl.innerHTML=procs.map(x=>\`<option value="\${esc(x)}"></option>\`).join('');
-        }
+        if(gp){gp.setAttribute('list','gfProcedureList');let dl=document.getElementById('gfProcedureList');if(!dl){dl=document.createElement('datalist');dl.id='gfProcedureList';gp.after(dl)}dl.innerHTML=procs.map(x=>\`<option value="\${esc(x)}"></option>\`).join('')}
       }
       fillFilters();
     `);
