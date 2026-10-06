@@ -1,59 +1,31 @@
 <!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hospital São José — Gestão Cirúrgica</title><style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#f5f8fc}iframe{border:0;width:100%;height:100%;display:block}</style></head><body><iframe id="appFrame" src="/app.html" title="Gestão Cirúrgica"></iframe><script>
 const frame=document.getElementById('appFrame');
 frame.addEventListener('load',()=>{
-  const w=frame.contentWindow;
-  try{
-    const style=w.document.createElement('style');
-    style.textContent=`
-      .smart-wrap{position:relative}.smart-row{display:flex;width:100%}.smart-row input{flex:1;min-width:0;border-radius:7px 0 0 7px!important}.smart-arrow{width:38px;border:1px solid #c9d6e6;border-left:0;background:#eef3fa;color:#1f3f8f;border-radius:0 7px 7px 0;font-weight:900;cursor:pointer}.smart-arrow:hover{background:#dfe9f6}.smart-menu{display:none;position:absolute;left:0;right:0;top:100%;z-index:100;background:white;border:1px solid #b9c9de;border-radius:7px;box-shadow:0 8px 22px #10294a26;max-height:220px;overflow:auto;margin-top:3px}.smart-menu.open{display:block}.smart-option{padding:9px 10px;font-size:12px;cursor:pointer;border-bottom:1px solid #edf1f6}.smart-option:hover{background:#eef5ff}.smart-option:last-child{border-bottom:0}.smart-empty{padding:10px;color:#64748b;font-size:12px}.smart-hint{color:#64748b;font-size:10px;margin-top:3px}`;
-    w.document.head.appendChild(style);
-    w.eval(`
-      function smartOptions(key){
-        return [...new Set(S.rows.map(x=>String(x[key]||'').trim()).filter(Boolean))]
-          .sort((a,b)=>a.localeCompare(b,'pt-BR'));
-      }
-      function smartMenuHtml(id,key,query=''){
-        const q=String(query||'').trim().toLowerCase();
-        const opts=smartOptions(key).filter(o=>!q||o.toLowerCase().includes(q));
-        return opts.length?opts.map(o=>\`<div class="smart-option" onmousedown="selectSmart('f_\${id}',\${JSON.stringify(o)})">\${esc(o)}</div>\`).join(''):'<div class="smart-empty">Nenhuma opção encontrada. Digite um novo valor e salve.</div>';
-      }
-      function toggleSmart(id,key){
-        document.querySelectorAll('.smart-menu.open').forEach(m=>{if(m.id!=='menu_'+id)m.classList.remove('open')});
-        const menu=document.getElementById('menu_'+id),inp=document.getElementById('f_'+id);
-        if(!menu)return;
-        menu.innerHTML=smartMenuHtml(id,key,inp?.value||'');
-        menu.classList.toggle('open');
-        if(menu.classList.contains('open'))inp?.focus();
-      }
-      function filterSmart(id,key){
-        const menu=document.getElementById('menu_'+id),inp=document.getElementById('f_'+id);
-        if(!menu)return;
-        menu.innerHTML=smartMenuHtml(id,key,inp?.value||'');
-        menu.classList.add('open');
-      }
-      function selectSmart(inputId,value){
-        const inp=document.getElementById(inputId);if(inp){inp.value=value;inp.dispatchEvent(new Event('input',{bubbles:true}))}
-        const menu=document.getElementById('menu_'+inputId.replace('f_',''));if(menu)menu.classList.remove('open');
-      }
-      function field(label,id,val='',type='text',cls=''){
-        const smartKey=id==='surgeon'?'surgeon':id==='procedure_name'?'procedure_name':null;
-        if(smartKey && type==='text'){
-          return \`<div class="field \${cls} smart-wrap"><label>\${label}</label><div class="smart-row"><input id="f_\${id}" type="text" value="\${esc(val||'')}" autocomplete="off" placeholder="Selecione ou digite um novo" oninput="filterSmart('\${id}','\${smartKey}')" onfocus="filterSmart('\${id}','\${smartKey}')" onblur="setTimeout(()=>document.getElementById('menu_\${id}')?.classList.remove('open'),180)"><button type="button" class="smart-arrow" tabindex="-1" onclick="toggleSmart('\${id}','\${smartKey}')">▼</button></div><div id="menu_\${id}" class="smart-menu">\${smartMenuHtml(id,smartKey,val||'')}</div><div class="smart-hint">Escolha pela seta ou digite um novo. Depois de salvo, o novo valor passa a integrar a lista.</div></div>\`;
-        }
-        return \`<div class="field \${cls}"><label>\${label}</label><input id="f_\${id}" type="\${type}" value="\${esc(val||'')}"></div>\`;
-      }
-      function fillFilters(){
-        const docs=[...new Set(S.rows.map(x=>x.surgeon).filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b),'pt-BR'));
-        const procs=[...new Set(S.rows.map(x=>x.procedure_name).filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b),'pt-BR'));
-        const spec=[...new Set(S.rows.map(x=>x.specialty).filter(Boolean))].sort();
-        document.getElementById('gfDoctor').innerHTML='<option value="">Todos os médicos</option>'+docs.map(x=>\`<option>\${esc(x)}</option>\`).join('');
-        document.getElementById('gfSpecialty').innerHTML='<option value="">Especialidade</option>'+spec.map(x=>\`<option>\${esc(x)}</option>\`).join('');
-        document.getElementById('gfStatus').innerHTML='<option value="">Situação</option>'+patientStatuses.map(x=>\`<option>\${x}</option>\`).join('');
-        const gp=document.getElementById('gfProcedure');
-        if(gp){gp.setAttribute('list','gfProcedureList');let dl=document.getElementById('gfProcedureList');if(!dl){dl=document.createElement('datalist');dl.id='gfProcedureList';gp.after(dl)}dl.innerHTML=procs.map(x=>\`<option value="\${esc(x)}"></option>\`).join('')}
-      }
-      fillFilters();
-    `);
-  }catch(e){console.error('Falha ao ativar listas inteligentes',e)}
+ const w=frame.contentWindow;
+ try{
+  const style=w.document.createElement('style');style.textContent=`.smart-wrap{position:relative}.smart-row{display:flex;width:100%}.smart-row input{flex:1;min-width:0;border-radius:7px 0 0 7px!important}.smart-arrow{width:38px;border:1px solid #c9d6e6;border-left:0;background:#eef3fa;color:#1f3f8f;border-radius:0 7px 7px 0;font-weight:900;cursor:pointer}.smart-menu{display:none;position:absolute;left:0;right:0;top:100%;z-index:110;background:white;border:1px solid #b9c9de;border-radius:7px;box-shadow:0 8px 22px #10294a26;max-height:230px;overflow:auto;margin-top:3px}.smart-menu.open{display:block}.smart-option{padding:9px 10px;font-size:12px;cursor:pointer;border-bottom:1px solid #edf1f6}.smart-option:hover{background:#eef5ff}.smart-hint{color:#64748b;font-size:10px;margin-top:3px}`;w.document.head.appendChild(style);
+  w.eval(`
+   const seedProcedures=['COLECISTECTOMIA','HERNIOPLASTIA INGUINAL','HERNIOPLASTIA INGUINAL (BILATERAL)','HERNIOPLASTIA UMBILICAL','HISTERECTOMIA C/ ANEXECTOMIA','HISTERECTOMIA TOTAL','NEFROLITOTRIPSIA PERCUTÂNEA','PAROTIDECTOMIA PARCIAL OU SUBTOTAL','POSTECTOMIA','RESSECÇÃO ENDOSCÓPICA DE PRÓSTATA','RETIRADA DE FIO OU PINO INTRA-ÓSSEO','TRATAMENTO CIRÚRGICO DE FRATURA DA CLAVÍCULA','TRATAMENTO CIRÚRGICO DE FRATURA DIAFISÁRIA ÚNICA DO RÁDIO','TRATAMENTO CIRÚRGICO DE PÉ TORTO CONGÊNITO','URETERORRENOLITOTRIPSIA FLEXÍVEL A LASER','VASECTOMIA'];
+   const seedDoctors=['KATARINE CAETANO','WESLLEY SANTIAGO','LUCAS MEIRA','JOÃO MUSSY','ANDRÉ MELO'];
+   const seedSpecialties=['CIRURGIA GERAL','UROLOGIA','ORTOPEDIA','PLÁSTICA','CABEÇA E PESCOÇO','GINECOLOGISTA','PÉ TORTO','VASCULAR'];
+   const requestTypes=['AIH','APAC','BPA'];
+   const authMonths=['JANEIRO','FEVEREIRO','MARÇO','ABRIL','MAIO','JUNHO','JULHO','AGOSTO','SETEMBRO','OUTUBRO','NOVEMBRO','DEZEMBRO'];
+   const revalidationOptions=['SOLICITAR','SOLICITADO'];
+   const requestStatuses=['ATIVO','INATIVO','EM PREPARAÇÃO','PROCESSO FINALIZADO','SUSPENSO'];
+   function uniqueSorted(arr){return [...new Set(arr.map(x=>String(x||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'))}
+   function smartOptions(key){const seeds=key==='surgeon'?seedDoctors:key==='procedure_name'?seedProcedures:[];return uniqueSorted([...seeds,...S.rows.map(x=>x[key])])}
+   function smartMenuHtml(id,key,query=''){const q=String(query||'').trim().toLowerCase();const opts=smartOptions(key).filter(o=>!q||o.toLowerCase().includes(q));return opts.length?opts.map(o=>\`<div class="smart-option" onmousedown="selectSmart('f_\${id}',\${JSON.stringify(o)})">\${esc(o)}</div>\`).join(''):'<div class="smart-option">Digite um novo valor e salve</div>'}
+   function toggleSmart(id,key){document.querySelectorAll('.smart-menu.open').forEach(m=>{if(m.id!=='menu_'+id)m.classList.remove('open')});const menu=document.getElementById('menu_'+id),inp=document.getElementById('f_'+id);if(!menu)return;menu.innerHTML=smartMenuHtml(id,key,inp?.value||'');menu.classList.toggle('open');if(menu.classList.contains('open'))inp?.focus()}
+   function filterSmart(id,key){const menu=document.getElementById('menu_'+id),inp=document.getElementById('f_'+id);if(!menu)return;menu.innerHTML=smartMenuHtml(id,key,inp?.value||'');menu.classList.add('open')}
+   function selectSmart(inputId,value){const inp=document.getElementById(inputId);if(inp)inp.value=value;const menu=document.getElementById('menu_'+inputId.replace('f_',''));if(menu)menu.classList.remove('open')}
+   function smartField(label,id,val='',key=id,cls=''){return \`<div class="field \${cls} smart-wrap"><label>\${label}</label><div class="smart-row"><input id="f_\${id}" type="text" value="\${esc(val||'')}" autocomplete="off" placeholder="Selecione ou digite um novo" oninput="filterSmart('\${id}','\${key}')" onfocus="filterSmart('\${id}','\${key}')" onblur="setTimeout(()=>document.getElementById('menu_\${id}')?.classList.remove('open'),180)"><button type="button" class="smart-arrow" onclick="toggleSmart('\${id}','\${key}')">▼</button></div><div id="menu_\${id}" class="smart-menu">\${smartMenuHtml(id,key,val||'')}</div><div class="smart-hint">Pode selecionar ou digitar um novo valor.</div></div>\`}
+   function fixedSelect(label,id,val,opts,cls='',emptyLabel=''){return \`<div class="field \${cls}"><label>\${label}</label><select id="f_\${id}"><option value="">\${emptyLabel}</option>\${opts.map(o=>\`<option value="\${esc(o)}" \${o===val?'selected':''}>\${esc(o)}</option>\`).join('')}</select></div>\`}
+   function editPatient(id=''){let x=id?S.rows.find(r=>r.id===id):{};document.getElementById('modal').innerHTML=\`<div class="back"><div class="modal"><div class="mh"><b>✏ \${id?'Editar Paciente: '+esc(x.patient_name):'Novo Paciente'}</b><button class="btn" onclick="document.getElementById('modal').innerHTML=''">Fechar</button></div><div class="mb"><div class="grid">\${field('NOME COMPLETO *','patient_name',x.patient_name)}\${field('IDS','ids',x.ids)}\${field('CPF','cpf',x.cpf)}\${field('CONTATO / WHATSAPP','phone',x.phone)}\${field('DATA DE SOLICITAÇÃO DO AIH','aih_request_date',x.aih_request_date,'date')}\${field('DATA CADASTRO IDS','ids_register_date',x.ids_register_date,'date')}\${smartField('PROCEDIMENTO CIRÚRGICO *','procedure_name',x.procedure_name,'procedure_name','span2')}\${field('CÓDIGO DO PROCEDIMENTO','sigtap_code',x.sigtap_code)}\${fixedSelect('TIPO DE SOLICITAÇÃO','request_type',x.request_type,requestTypes)}\${fixedSelect('ESPECIALIDADE','specialty',x.specialty,uniqueSorted([...seedSpecialties,...S.rows.map(r=>r.specialty)]),'','Especialidade')}\${smartField('MÉDICO CIRURGIÃO','surgeon',x.surgeon,'surgeon')}\${field('DATA DE NASCIMENTO (DN)','birth_date',x.birth_date,'date')}\${field('DATA DA AUTORIZAÇÃO','authorization_date',x.authorization_date,'date')}\${fixedSelect('MÊS DA AUTORIZAÇÃO','authorization_month',x.authorization_month,authMonths)}\${field('DATA DA PROGRAMAÇÃO','programming_date',x.programming_date,'date')}\${fixedSelect('SOLICITAR REVALIDAÇÃO','revalidation_status',x.revalidation_status,revalidationOptions,'','(Nenhum)')}\${selectField('SITUAÇÃO DO PACIENTE','patient_status',x.patient_status,patientStatuses)}\${fixedSelect('SITUAÇÃO DA SOLICITAÇÃO','request_status',x.request_status,requestStatuses)}\${field('DATA DA REMARCAÇÃO','reschedule_date',x.reschedule_date,'date')}\${field('DATA DA CIRURGIA','surgery_date',x.surgery_date,'date')}<div class="field span3"><label>SUSPENSÃO / OBSERVAÇÕES</label><textarea id="f_suspension_notes">\${esc(x.suspension_notes||'')}</textarea></div></div></div><div class="mf"><button class="btn primary" onclick="savePatient('\${id}')">Gravar Alterações</button></div></div></div>\`}
+   const oldSavePatient=savePatient;
+   savePatient=async function(id){const keys=['patient_name','ids','cpf','phone','aih_request_date','ids_register_date','procedure_name','sigtap_code','request_type','specialty','surgeon','birth_date','authorization_date','authorization_month','programming_date','revalidation_status','patient_status','request_status','reschedule_date','surgery_date','suspension_notes'];let d={updated_by:uid};keys.forEach(k=>d[k]=document.getElementById('f_'+k)?.value||null);if(!d.patient_name||!d.procedure_name)return alert('Nome e procedimento são obrigatórios.');if(id)await api('/rest/v1/surgeries?id=eq.'+id,{method:'PATCH',body:JSON.stringify(d)});else await api('/rest/v1/surgeries',{method:'POST',body:JSON.stringify({...d,stage:'fila',created_by:uid})});document.getElementById('modal').innerHTML='';await load();fillFilters();renderCurrent()}
+   function fillFilters(){const docs=uniqueSorted([...seedDoctors,...S.rows.map(x=>x.surgeon)]),procs=uniqueSorted([...seedProcedures,...S.rows.map(x=>x.procedure_name)]),spec=uniqueSorted([...seedSpecialties,...S.rows.map(x=>x.specialty)]);document.getElementById('gfDoctor').innerHTML='<option value="">Todos os médicos</option>'+docs.map(x=>\`<option>\${esc(x)}</option>\`).join('');document.getElementById('gfSpecialty').innerHTML='<option value="">Especialidade</option>'+spec.map(x=>\`<option>\${esc(x)}</option>\`).join('');document.getElementById('gfStatus').innerHTML='<option value="">Situação</option>'+patientStatuses.map(x=>\`<option>\${x}</option>\`).join('');const gp=document.getElementById('gfProcedure');if(gp){gp.setAttribute('list','gfProcedureList');let dl=document.getElementById('gfProcedureList');if(!dl){dl=document.createElement('datalist');dl.id='gfProcedureList';gp.after(dl)}dl.innerHTML=procs.map(x=>\`<option value="\${esc(x)}"></option>\`).join('')}}
+   fillFilters();
+  `);
+ }catch(e){console.error('Falha ao ativar listas inteligentes',e)}
 });
 </script></body></html>
