@@ -48,8 +48,6 @@ renderPendencias=function(){
  const rows=stageRows('pendencias');
  document.getElementById('content').innerHTML=`<section class="card"><div class="section-head"><div><h2>⚠ Pendências (${rows.length} pacientes)</h2><div class="sub">Pacientes com revalidação, autorização, exames ou outras pendências são direcionados automaticamente para cá.</div></div></div><div class="notice"><b>Não é possível cadastrar paciente diretamente nesta tela.</b> O paciente chega aqui automaticamente quando uma pendência é identificada. O botão “Próxima etapa” só funciona depois que as pendências forem resolvidas.</div>${baseTable(rows)}</section>`;
 };
-const oldRenderCurrentV4=renderCurrent;
-renderCurrent=function(){if(S.view==='pendencias')return renderPendencias();return oldRenderCurrentV4()};
 
 const triageGroupsV4=[
  {title:'1. Investigação de Estado de Saúde Atual (Triagem de Sintomas)',alterKey:'alteracao_topico1',qs:[
@@ -77,6 +75,13 @@ function triageControlV4(k,type,val){
  if(type==='check')return `<label class="check"><input id="t_${k}" type="checkbox" ${val===true||val==='SIM'?'checked':''}> Confirmado</label>`;
  return `<textarea id="t_${k}">${esc(val||'')}</textarea>`;
 }
+function triageTemplateV4(){
+ return `<div style="margin:14px 0 18px"><div class="notice"><b>Roteiro da Triagem de Enfermagem</b><br>Este checklist será preenchido individualmente em cada paciente ao clicar em “☎ Entrevista”. Alteração nos tópicos 1 ou 2 encaminha automaticamente para Avaliação do Enfermeiro.</div>${triageGroupsV4.map(g=>`<div style="border:1px solid #d7e0ea;border-radius:10px;padding:14px;margin-bottom:10px;background:#fff"><h3 style="margin:0 0 10px;color:#1f3f8f;font-size:15px">${g.title}</h3>${g.qs.map(([k,q,t])=>`<div style="padding:6px 0;border-bottom:1px solid #eef2f7;font-size:12px">☐ ${esc(q)}</div>`).join('')}${g.alterKey?`<div style="margin-top:8px;font-size:12px;color:#b45309"><b>⚠ Verificar se houve alteração neste tópico.</b></div>`:''}</div>`).join('')}</div>`;
+}
+renderTriage=function(){
+ const rows=stageRows('entrevista_tecnico');
+ document.getElementById('content').innerHTML=`<section class="card"><div class="section-head"><div><h2>☎ Triagem de Enfermagem</h2><div class="sub">Entrevista estruturada com rastreabilidade do profissional</div></div></div>${triageTemplateV4()}<div class="tablewrap"><table class="table"><thead><tr><th class="actions">AÇÕES</th><th>PACIENTE</th><th>MÉDICO</th><th>PROCEDIMENTO</th><th>ENTREVISTADOR</th><th>DATA/HORA</th><th>JUSTIFICATIVA AO ENFERMEIRO</th></tr></thead><tbody>${rows.map(x=>`<tr><td>${actionButtons(x)} <button class="btn small" onclick="editTriage('${x.id}')">☎ Entrevista</button></td><td><b>${esc(x.patient_name)}</b></td><td>${esc(x.surgeon||'')}</td><td>${esc(x.procedure_name||'')}</td><td>${esc(x.triage_by?'Registrado':'')}</td><td>${esc(x.triage_at||'')}</td><td>${esc(x.nurse_referral_reason||'')}</td></tr>`).join('')||'<tr><td colspan="7" style="text-align:center;padding:28px">Nenhum paciente nesta etapa.</td></tr>'}</tbody></table></div></section>`;
+};
 editTriage=function(id){
  let x=S.rows.find(r=>r.id===id),a=x.triage_answers||{};
  document.getElementById('modal').innerHTML=`<div class="back"><div class="modal"><div class="mh"><b>☎ Triagem de Enfermagem: ${esc(x.patient_name)}</b><button class="btn" onclick="document.getElementById('modal').innerHTML=''">Fechar</button></div><div class="mb"><div class="notice"><b>Regra automática:</b> se houver alteração no tópico 1 ou 2, o paciente será encaminhado diretamente para Avaliação do Enfermeiro.</div>${triageGroupsV4.map(g=>`<div style="border:1px solid #d7e0ea;border-radius:10px;padding:14px;margin-bottom:14px"><h3 style="margin:0 0 12px;color:#1f3f8f">${g.title}</h3>${g.qs.map(([k,q,t])=>`<div class="field" style="margin-bottom:10px"><label>${q}</label>${triageControlV4(k,t,a[k])}</div>`).join('')}${g.alterKey?`<div class="field" style="margin-top:10px"><label style="color:#b45309">⚠ Alteração identificada neste tópico?</label><select id="t_${g.alterKey}"><option value="NÃO" ${a[g.alterKey]!=='SIM'?'selected':''}>NÃO</option><option value="SIM" ${a[g.alterKey]==='SIM'?'selected':''}>SIM</option></select></div>`:''}</div>`).join('')}<div class="field"><label>Observações da triagem</label><textarea id="t_notes">${esc(x.triage_notes||'')}</textarea></div><div class="field" style="margin-top:12px"><label>Justificativa para encaminhar ao enfermeiro</label><textarea id="t_reason">${esc(x.nurse_referral_reason||'')}</textarea></div></div><div class="mf"><button class="btn" onclick="saveTriageV4('${id}',false)">Salvar triagem</button><button class="btn green" onclick="saveTriageV4('${id}',true)">Encaminhar para o Enfermeiro</button></div></div></div>`;
@@ -96,5 +101,7 @@ saveTriageV4=async function(id,manualForward){
 };
 saveTriage=saveTriageV4;
 
+const oldRenderCurrentV4=renderCurrent;
+renderCurrent=function(){if(S.view==='pendencias')return renderPendencias();if(S.view==='entrevista_tecnico')return renderTriage();return oldRenderCurrentV4()};
 forceTabsV4();renderCurrent();
 })();
