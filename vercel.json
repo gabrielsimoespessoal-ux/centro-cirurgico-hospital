@@ -1,1 +1,1 @@
-{"cleanUrls":true,"rewrites":[{"source":"/importar","destination":"/importar-v3.html"}]}
+{"cleanUrls":true,"rewrites":[{"source":"/app","destination":"/app-inteligente.html"},{"source":"/importar","destination":"/importar-v3.html"}]}
