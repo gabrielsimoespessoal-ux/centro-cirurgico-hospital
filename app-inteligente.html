@@ -1,0 +1,39 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hospital São José — Gestão Cirúrgica</title><style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#f5f8fc}iframe{border:0;width:100%;height:100%;display:block}</style></head><body><iframe id="appFrame" src="/app.html" title="Gestão Cirúrgica"></iframe><script>
+const frame=document.getElementById('appFrame');
+frame.addEventListener('load',()=>{
+  const w=frame.contentWindow;
+  try{
+    w.eval(`
+      function smartOptions(key){
+        return [...new Set(S.rows.map(x=>String(x[key]||'').trim()).filter(Boolean))]
+          .sort((a,b)=>a.localeCompare(b,'pt-BR'));
+      }
+      function field(label,id,val='',type='text',cls=''){
+        const smartKey=id==='surgeon'?'surgeon':id==='procedure_name'?'procedure_name':null;
+        if(smartKey && type==='text'){
+          const listId='smart_'+id;
+          const opts=smartOptions(smartKey);
+          return \`<div class="field \${cls}"><label>\${label}</label><input id="f_\${id}" type="text" list="\${listId}" value="\${esc(val||'')}" autocomplete="off" placeholder="Escolha na lista ou digite um novo"><datalist id="\${listId}">\${opts.map(o=>\`<option value="\${esc(o)}"></option>\`).join('')}</datalist><div class="sub">⌄ Escolha um existente ou digite um novo. Novos valores passam a aparecer automaticamente.</div></div>\`;
+        }
+        return \`<div class="field \${cls}"><label>\${label}</label><input id="f_\${id}" type="\${type}" value="\${esc(val||'')}"></div>\`;
+      }
+      function fillFilters(){
+        const docs=[...new Set(S.rows.map(x=>x.surgeon).filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b),'pt-BR'));
+        const procs=[...new Set(S.rows.map(x=>x.procedure_name).filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b),'pt-BR'));
+        const spec=[...new Set(S.rows.map(x=>x.specialty).filter(Boolean))].sort();
+        document.getElementById('gfDoctor').innerHTML='<option value="">Todos os médicos</option>'+docs.map(x=>\`<option>\${esc(x)}</option>\`).join('');
+        document.getElementById('gfSpecialty').innerHTML='<option value="">Especialidade</option>'+spec.map(x=>\`<option>\${esc(x)}</option>\`).join('');
+        document.getElementById('gfStatus').innerHTML='<option value="">Situação</option>'+patientStatuses.map(x=>\`<option>\${x}</option>\`).join('');
+        const gp=document.getElementById('gfProcedure');
+        if(gp){
+          gp.setAttribute('list','gfProcedureList');
+          let dl=document.getElementById('gfProcedureList');
+          if(!dl){dl=document.createElement('datalist');dl.id='gfProcedureList';gp.after(dl)}
+          dl.innerHTML=procs.map(x=>\`<option value="\${esc(x)}"></option>\`).join('');
+        }
+      }
+      fillFilters();
+    `);
+  }catch(e){console.error('Falha ao ativar listas inteligentes',e)}
+});
+</script></body></html>
