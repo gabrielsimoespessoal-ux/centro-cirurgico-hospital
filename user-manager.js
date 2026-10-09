@@ -36,4 +36,5 @@ if(!isAdmin()||id===uid)return alert('Operação não permitida.');
 if(!confirm(approved?'Aprovar o acesso deste usuário?':'Desativar o acesso deste usuário?'))return;
 try{await api('/rest/v1/profiles?id=eq.'+encodeURIComponent(id),{method:'PATCH',body:JSON.stringify({approved})});await refreshUserManager();alert(approved?'Acesso aprovado.':'Acesso desativado.')}catch(e){alert('Não foi possível alterar o acesso: '+e.message);}
 };
+if(isAdmin() && S.view !== 'gerenciador_usuarios') renderTabs();
 })();
