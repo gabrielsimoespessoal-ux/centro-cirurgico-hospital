@@ -26,10 +26,6 @@ window.hsjConfirmarMapaDireto=async function(id){
   const endpoint='/rest/v1/surgeries?id=eq.'+encodeURIComponent(id)+'&stage=eq.'+encodeURIComponent(row.stage)+'&updated_at=eq.'+encodeURIComponent(row.updated_at);
   const updated=await api(endpoint,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({stage:'mapa_cirurgico',updated_by:uid})});
   if(!Array.isArray(updated)||updated.length!==1)throw Error('Mudança simultânea detectada. Nenhum encaminhamento confirmado.');
-  // Registro de encaminhamento no histórico de supervisão, sem alterar a etapa novamente.
-  try{
-   await api('/rest/v1/supervision_referrals',{method:'POST',body:JSON.stringify({surgery_id:id,origin_stage:row.stage,destination:'supervisao',reason:'Encaminhamento direto ao Mapa Cirúrgico: '+reason,created_by:uid,status:'respondido',resolution:'Encaminhado diretamente ao Mapa Cirúrgico.'})});
-  }catch(e){console.warn('Registro complementar do encaminhamento indisponível:',e)}
   document.getElementById('modal').innerHTML='';
   await load();renderCurrent();
   alert('Paciente encaminhado ao Mapa Cirúrgico no banco compartilhado.');
@@ -41,12 +37,20 @@ window.actionButtons=function(x){return oldActions(x)+(x.stage==='mapa_cirurgico
 const oldCurrent=window.renderCurrent;
 window.renderCurrent=function(){
  const r=oldCurrent.apply(this,arguments);
- // Mapas com botões próprios: incluir ação direta onde houver botão de edição identificado.
+ // Telas com botões próprios: incluir ação direta onde houver botão de edição identificado.
  document.querySelectorAll('#content button[onclick^="editMapPatient("]').forEach(b=>{
   const id=(b.getAttribute('onclick')||'').match(/'([0-9a-f-]{36})'/)?.[1];
   if(!id||b.parentElement.querySelector('[data-mapa-direto]'))return;
   const x=S.rows.find(t=>t.id===id);if(!x||x.stage==='mapa_cirurgico')return;
   const a=document.createElement('button');a.className='btn small';a.dataset.mapaDireto='1';a.textContent='🏥 Mapa Cirúrgico';a.onclick=()=>hsjMapaDireto(id);b.after(a);
+ });
+ // Caixa da Supervisão: acrescentar opção diretamente ao lado de Editar cadastro.
+ if(S.view==='supervisao')document.querySelectorAll('#content button[data-hsj-edit]').forEach(b=>{
+   if(b.parentElement.querySelector('[data-mapa-direto]'))return;
+   const label=b.closest('tr')?.querySelector('td b')?.textContent||'';
+   const matches=S.rows.filter(x=>x.patient_name===label);
+   if(matches.length!==1||matches[0].stage==='mapa_cirurgico')return;
+   const a=document.createElement('button');a.className='btn small';a.dataset.mapaDireto='1';a.textContent='🏥 Mapa Cirúrgico';a.onclick=()=>hsjMapaDireto(matches[0].id);b.after(a);
  });
  return r;
 };
