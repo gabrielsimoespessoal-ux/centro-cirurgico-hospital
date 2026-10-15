@@ -18,6 +18,27 @@ function navigate(x){
  if(matching){matching.style.outline='3px solid #2563eb';matching.style.outlineOffset='-3px';matching.scrollIntoView({behavior:'smooth',block:'center'});}
  else document.getElementById('content')?.scrollIntoView({behavior:'smooth',block:'start'});
 }
+function showChoices(records){
+ const prior=document.getElementById('hsjBuscaConflitos');
+ if(prior)prior.remove();
+ const panel=document.createElement('section');panel.id='hsjBuscaConflitos';panel.className='card';
+ panel.style.cssText='margin:12px 0;padding:16px;border:2px solid #2563eb;';
+ const head=document.createElement('div');head.style.cssText='display:flex;align-items:center;justify-content:space-between;gap:12px;';
+ const title=document.createElement('strong');title.textContent=records.length+' registros encontrados — escolha o paciente:';
+ const close=document.createElement('button');close.className='btn';close.textContent='Fechar';close.onclick=()=>panel.remove();head.append(title,close);panel.append(head);
+ const wrap=document.createElement('div');wrap.style.cssText='overflow-x:auto;margin-top:10px';
+ const table=document.createElement('table');table.className='table';
+ const thead=document.createElement('thead'),tr=thead.insertRow();
+ ['Paciente','IDS','CPF','Procedimento','Aba atual','Ação'].forEach(label=>{const th=document.createElement('th');th.textContent=label;tr.appendChild(th)});
+ table.appendChild(thead);const body=document.createElement('tbody');
+ records.forEach(x=>{
+  const row=body.insertRow();
+  [x.patient_name||'—',x.ids||'—',x.cpf||'—',x.procedure_name||'—',labels[x.stage]||x.stage||'—'].forEach(val=>{const td=row.insertCell();td.textContent=String(val)});
+  const cell=row.insertCell(),button=document.createElement('button');button.className='btn primary small';button.textContent='Abrir paciente';button.onclick=()=>{panel.remove();navigate(x)};cell.appendChild(button);
+ });table.appendChild(body);wrap.appendChild(table);panel.appendChild(wrap);
+ const anchor=document.getElementById('tabs');if(anchor)anchor.insertAdjacentElement('afterend',panel);else document.getElementById('content')?.before(panel);
+ panel.scrollIntoView({behavior:'smooth',block:'start'});
+}
 const prior=window.applyGlobalFiltersV16;
 window.applyGlobalFiltersV16=function(){
  const q=normalize(document.getElementById('gfName')?.value);
@@ -26,7 +47,7 @@ window.applyGlobalFiltersV16=function(){
   const chosen=exact.length===1?exact[0]:results.length===1?results[0]:null;
   if(chosen){navigate(chosen);return;}
   if(results.length>1){
-   alert('Foram encontrados '+results.length+' registros correspondentes. Informe o nome completo, CPF ou IDS para identificar o paciente sem ambiguidade.');return;
+   showChoices(results);return;
   }
  }
  return prior?.apply(this,arguments);
