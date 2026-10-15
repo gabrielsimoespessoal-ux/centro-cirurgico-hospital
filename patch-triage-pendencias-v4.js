@@ -1,5 +1,5 @@
 (()=>{
-const orderedViewsV4=['fila','pendencias','consulta_preop','exames','entrevista_tecnico','avaliacao_enfermeiro','mapa_cirurgico','suspensas','duploj','pos_operatorio','indicadores'];
+const orderedViewsV4=['fila','consulta_preop','exames','entrevista_tecnico','avaliacao_enfermeiro','mapa_cirurgico','suspensas','duploj','pos_operatorio','indicadores'];
 function forceTabsV4(){
   const tabs=document.getElementById('tabs'); if(!tabs)return;
   tabs.innerHTML=orderedViewsV4.map(v=>`<button class="tab ${v===S.view?'on':''}" onclick="setView('${v}',this)">${labels[v]}</button>`).join('');
@@ -28,22 +28,8 @@ async function routePendingRowsV4(){
   }
   return true;
 }
-const oldLoadV4=load;
-load=async function(){await oldLoadV4();try{await routePendingRowsV4()}catch(e){console.warn('Falha ao rotear pendências',e)}};
-
-const oldNextV4=nextStage;
-nextStage=async function(id){
-  const x=S.rows.find(r=>r.id===id); if(!x)return;
-  if(x.patient_status==='SUSPENSA')return alert('Paciente suspenso. Retire a suspensão antes de avançar o fluxo.');
-  if(hasOperationalPendency(x)){
-    if(x.stage==='pendencias')return alert('Este paciente ainda possui pendências. Resolva revalidação, autorização, exames ou demais pendências antes de avançar.');
-    if(!confirm2(`Foram identificadas pendências para ${x.patient_name}. Deseja encaminhar para Pendências?`,'Confirma o encaminhamento automático para a aba Pendências?'))return;
-    await api('/rest/v1/surgeries?id=eq.'+id,{method:'PATCH',body:JSON.stringify({stage:'pendencias',updated_by:uid})});
-    await load();renderCurrent();return;
-  }
-  return oldNextV4(id);
-};
-
+// Fluxo de Pendências desativado: pendências permanecem registradas nos campos do paciente.
+// O paciente continua na Fila de Cirurgias sem movimentação automática para uma aba removida.
 renderPendencias=function(){
  const rows=stageRows('pendencias');
  document.getElementById('content').innerHTML=`<section class="card"><div class="section-head"><div><h2>⚠ Pendências (${rows.length} pacientes)</h2><div class="sub">Pacientes com revalidação, autorização, exames ou outras pendências são direcionados automaticamente para cá.</div></div></div><div class="notice"><b>Não é possível cadastrar paciente diretamente nesta tela.</b> O paciente chega aqui automaticamente quando uma pendência é identificada. O botão “Próxima etapa” só funciona depois que as pendências forem resolvidas.</div>${baseTable(rows)}</section>`;
