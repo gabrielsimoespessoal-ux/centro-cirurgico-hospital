@@ -31,5 +31,16 @@ window.applyGlobalFiltersV16=function(){
  }
  return prior?.apply(this,arguments);
 };
-// Botão e Enter dos Filtros Gerais usam applyGlobalFiltersV16; preservar filtros tradicionais quando não há um paciente único.
+// Reassociar eventos: o patch antigo atribuiu onclick à função anterior, e a troca da função global não muda essa referência.
+function bindMainSearch(){
+ const button=document.getElementById('gfSearchBtnV16');
+ if(button){button.onclick=()=>window.applyGlobalFiltersV16();button.setAttribute('data-auto-nav','1');}
+ const input=document.getElementById('gfName');
+ if(input&&!input.dataset.hsjEnterNavigation){
+  input.dataset.hsjEnterNavigation='1';
+  input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();e.stopImmediatePropagation();window.applyGlobalFiltersV16();}},true);
+ }
+}
+bindMainSearch();setTimeout(bindMainSearch,300);setTimeout(bindMainSearch,1200);
+// As demais opções de filtro mantêm o comportamento original quando não há identificação única.
 })();
