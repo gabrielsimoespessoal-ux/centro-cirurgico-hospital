@@ -2,7 +2,7 @@
 // Extensão isolada. Não substitui tabelas, registros nem os formulários existentes.
 const V='supervisao';
 labels[V]='🛡 Supervisão';
-const allowed=['fila','pendencias','consulta_preop','exames','recebimento_nir','programacao','entrevista_tecnico','avaliacao_enfermeiro','mapa_cirurgico','cancelada','pos_operatorio','concluida'];
+const allowed=['fila','consulta_preop','exames','recebimento_nir','programacao','entrevista_tecnico','avaliacao_enfermeiro','mapa_cirurgico','cancelada','pos_operatorio','concluida'];
 let referrals=[];
 const byId=id=>S.rows.find(x=>x.id===id);
 const fmt=t=>t?new Date(t).toLocaleString('pt-BR'):'—';
