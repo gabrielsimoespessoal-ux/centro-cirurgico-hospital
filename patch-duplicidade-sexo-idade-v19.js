@@ -18,6 +18,7 @@ window.editPatient=function(id=''){
  const x=id?S.rows.find(r=>r.id===id):null;
  const box=document.createElement('div');box.className='field';box.innerHTML='<label>SEXO</label><select id="f_sex"><option value="">Não informado</option><option value="Feminino">Feminino</option><option value="Masculino">Masculino</option><option value="Outro">Outro</option></select>';grid.appendChild(box);
  box.querySelector('select').value=x?.sex||'';
+ const who=document.createElement('div');who.className='field';who.innerHTML='<label>PROFISSIONAL RESPONSÁVEL PELO CADASTRO</label><input id="f_registration_professional" type="text" autocomplete="name" placeholder="Nome completo do profissional" value="'+esc(x?.registration_professional||'')+'">';grid.appendChild(who);
  if(!id){
    const warning=document.createElement('div');warning.id='hsjDupWarning';warning.className='notice';warning.style.margin='12px 0';warning.style.display='none';grid.parentElement.prepend(warning);
    ['patient_name','cpf','ids','procedure_name','birth_date'].forEach(k=>{
@@ -40,7 +41,7 @@ window.hsjCheckDuplicateV19=async function(){
  }else{target.style.display='none';target.textContent=''}
  return found;
 };
-const keys=['patient_name','ids','cpf','phone','aih_request_date','ids_register_date','procedure_name','sigtap_code','request_type','specialty','surgeon','birth_date','authorization_date','authorization_month','programming_date','revalidation_status','patient_status','request_status','reschedule_date','surgery_date','suspension_notes','sex'];
+const keys=['patient_name','ids','cpf','phone','aih_request_date','ids_register_date','procedure_name','sigtap_code','request_type','specialty','surgeon','birth_date','authorization_date','authorization_month','programming_date','revalidation_status','patient_status','request_status','reschedule_date','surgery_date','suspension_notes','sex','registration_professional'];
 window.savePatient=async function(id){
  if(busy)return;busy=true;
  const btn=document.querySelector('#modal .mf .primary');if(btn)btn.disabled=true;
