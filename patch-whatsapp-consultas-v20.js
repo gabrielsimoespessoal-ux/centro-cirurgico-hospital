@@ -11,8 +11,9 @@ function dateBR(value){
  const m=String(value||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);
  return m?m[3]+'/'+m[2]+'/'+m[1]:String(value||'');
 }
-window.hsjEnviarConsultaWhatsapp=function(id){
- const x=S.rows.find(r=>r.id===id);
+window.hsjEnviarConsultaWhatsapp=function(id,draft={}){
+ const stored=S.rows.find(r=>r.id===id);
+ const x=stored?{...stored,...draft}:null;
  if(!x)return alert('Cadastro não encontrado. Atualize a página.');
  if(!x.consultation_date||!x.consultation_time)return alert('Salve a data e o horário da consulta antes de abrir o WhatsApp.');
  const phone=numberBR(x.phone);
@@ -63,13 +64,15 @@ window.editConsult=function(id){
  const btn=document.createElement('button');btn.type='button';btn.className='btn';
  btn.dataset.hsjWhatsapp='1';btn.textContent='📲 Enviar agendamento pelo WhatsApp';
  btn.onclick=()=>{
- const date=document.getElementById('f_consultation_date')?.value;
- const time=document.getElementById('f_consultation_time')?.value;
- if(!date||!time)return alert('Informe e salve a data e o horário da consulta para enviar pelo WhatsApp.');
- if(date!==String(x.consultation_date||'').slice(0,10)||time.slice(0,5)!==String(x.consultation_time||'').slice(0,5)){
-  return alert('Existem mudanças na data ou horário. Salve o agendamento antes de compartilhar.');
- }
- hsjEnviarConsultaWhatsapp(id);
+ const date=document.getElementById('f_consultation_date')?.value||'';
+ const time=document.getElementById('f_consultation_time')?.value||'';
+ if(!date||!time)return alert('Informe a data e o horário da consulta para compartilhar.');
+ hsjEnviarConsultaWhatsapp(id,{
+  consultation_date:date,
+  consultation_time:time,
+  specialty:document.getElementById('f_specialty')?.value||'',
+  surgeon:document.getElementById('f_surgeon')?.value||''
+ });
  };
  foot.insertBefore(btn,foot.firstChild);
  return result;
