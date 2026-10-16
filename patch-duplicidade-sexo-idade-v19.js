@@ -19,6 +19,22 @@ window.editPatient=function(id=''){
  const box=document.createElement('div');box.className='field';box.innerHTML='<label>SEXO</label><select id="f_sex"><option value="">Não informado</option><option value="Feminino">Feminino</option><option value="Masculino">Masculino</option><option value="Outro">Outro</option></select>';grid.appendChild(box);
  box.querySelector('select').value=x?.sex||'';
  const who=document.createElement('div');who.className='field';who.innerHTML='<label>PROFISSIONAL RESPONSÁVEL PELO CADASTRO</label><input id="f_registration_professional" type="text" autocomplete="name" placeholder="Nome completo do profissional" value="'+esc(x?.registration_professional||'')+'">';grid.appendChild(who);
+ if(id){
+  const footer=document.querySelector('#modal .mf');
+  if(footer&&!footer.querySelector('[data-whatsapp-cadastro]')){
+   const btn=document.createElement('button');
+   btn.type='button';btn.className='btn';btn.dataset.whatsappCadastro='1';
+   btn.textContent='📲 Enviar lembrete pelo WhatsApp';
+   btn.onclick=()=>{
+    if(typeof window.hsjEnviarConsultaWhatsapp!=='function')return alert('WhatsApp indisponível. Atualize a página.');
+    const phone=document.getElementById('f_phone')?.value||'';
+    const current=S.rows.find(row=>row.id===id);
+    if(!current?.consultation_date||!current?.consultation_time)return alert('Este paciente ainda não possui data e horário de consulta agendados. Realize o agendamento na aba Consultas.');
+    window.hsjEnviarConsultaWhatsapp(id,{phone});
+   };
+   footer.insertBefore(btn,footer.firstChild);
+  }
+ }
  if(!id){
    const warning=document.createElement('div');warning.id='hsjDupWarning';warning.className='notice';warning.style.margin='12px 0';warning.style.display='none';grid.parentElement.prepend(warning);
    ['patient_name','cpf','ids','procedure_name','birth_date'].forEach(k=>{
