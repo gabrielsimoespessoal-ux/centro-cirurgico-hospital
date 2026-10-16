@@ -18,7 +18,7 @@ window.editPatient=function(id=''){
  const x=id?S.rows.find(r=>r.id===id):null;
  const box=document.createElement('div');box.className='field';box.innerHTML='<label>SEXO</label><select id="f_sex"><option value="">Não informado</option><option value="Feminino">Feminino</option><option value="Masculino">Masculino</option><option value="Outro">Outro</option></select>';grid.appendChild(box);
  box.querySelector('select').value=x?.sex||'';
- const who=document.createElement('div');who.className='field';who.innerHTML='<label>PROFISSIONAL RESPONSÁVEL PELO CADASTRO</label><input id="f_registration_professional" type="text" autocomplete="name" placeholder="Nome completo do profissional" value="'+esc(x?.registration_professional||'')+'">';grid.appendChild(who);
+ const who=document.createElement('div');who.className='field';who.innerHTML='<label>PROFISSIONAL RESPONSÁVEL PELO CADASTRO '+(id?'':'*')+'</label><input id="f_registration_professional" type="text" autocomplete="name" placeholder="Nome completo do profissional" value="'+esc(x?.registration_professional||'')+'">';grid.appendChild(who);
  if(id){
   const footer=document.querySelector('#modal .mf');
   if(footer&&!footer.querySelector('[data-whatsapp-cadastro]')){
@@ -65,6 +65,8 @@ window.savePatient=async function(id){
  const d={updated_by:uid};keys.forEach(k=>d[k]=document.getElementById('f_'+k)?.value||null);
  if(d.revalidation_status==='(Nenhum)')d.revalidation_status=null;
  if(!d.patient_name||!d.procedure_name)throw Error('Nome e procedimento são obrigatórios.');
+ if(!id&&!String(d.registration_professional||'').trim()){document.getElementById('f_registration_professional')?.focus();throw Error('Informe o nome do profissional responsável pelo cadastro na fila.');}
+ if(d.registration_professional)d.registration_professional=d.registration_professional.trim();
  if(!id){
   const found=await window.hsjCheckDuplicateV19();
   if(found.length)throw Error('Cadastro bloqueado: paciente e procedimento já registrados. Abra o cadastro existente.');
