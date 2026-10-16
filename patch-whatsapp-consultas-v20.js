@@ -66,7 +66,7 @@ window.editConsult=function(id){
  const date=document.getElementById('f_consultation_date')?.value;
  const time=document.getElementById('f_consultation_time')?.value;
  if(!date||!time)return alert('Informe e salve a data e o horário da consulta para enviar pelo WhatsApp.');
- if(date!==x.consultation_date||time!==String(x.consultation_time||'').slice(0,5)){
+ if(date!==String(x.consultation_date||'').slice(0,10)||time.slice(0,5)!==String(x.consultation_time||'').slice(0,5)){
   return alert('Existem mudanças na data ou horário. Salve o agendamento antes de compartilhar.');
  }
  hsjEnviarConsultaWhatsapp(id);
