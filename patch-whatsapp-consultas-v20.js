@@ -41,7 +41,7 @@ function addTableButtons(){
   const edit=tr.querySelector('button[onclick^="editConsult("]');
   const id=(edit?.getAttribute('onclick')||'').match(/'([^']+)'/)?.[1];
   if(!id)return;
-  const x=S.rows.find(r=>r.id===id);if(!x||!x.consultation_date||!x.consultation_time)return;
+  const x=S.rows.find(r=>r.id===id);if(!x)return;
   const btn=document.createElement('button');btn.type='button';btn.className='btn small';
   btn.dataset.hsjWhatsapp='1';btn.style.margin='4px 0';btn.style.whiteSpace='nowrap';
   btn.textContent='📲 WhatsApp';
@@ -59,12 +59,13 @@ window.editConsult=function(id){
  const foot=document.querySelector('#modal .mf');
  if(!foot||foot.querySelector('[data-hsj-whatsapp]'))return result;
  const x=S.rows.find(r=>r.id===id);
- if(!x?.consultation_date||!x.consultation_time)return result;
+ if(!x)return result;
  const btn=document.createElement('button');btn.type='button';btn.className='btn';
  btn.dataset.hsjWhatsapp='1';btn.textContent='📲 Enviar agendamento pelo WhatsApp';
  btn.onclick=()=>{
  const date=document.getElementById('f_consultation_date')?.value;
  const time=document.getElementById('f_consultation_time')?.value;
+ if(!date||!time)return alert('Informe e salve a data e o horário da consulta para enviar pelo WhatsApp.');
  if(date!==x.consultation_date||time!==String(x.consultation_time||'').slice(0,5)){
   return alert('Existem mudanças na data ou horário. Salve o agendamento antes de compartilhar.');
  }
