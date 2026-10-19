@@ -101,7 +101,7 @@ window.hsjEscolherEtapaV26=function(id){
 window.hsjConfirmarEtapaV26=async function(id){
  const to=document.getElementById('hsjStageV26')?.value,x=S.rows.find(v=>v.id===id);
  if(!x||!to)return;
- if(to==='administrativo'||to==='supervisao'){
+ if(to==='administrativo'||to==='supervisao'||to==='avaliacao_enfermeiro'){
   document.getElementById('modal').innerHTML='';
   return openReferralV18(id,to);
  }
