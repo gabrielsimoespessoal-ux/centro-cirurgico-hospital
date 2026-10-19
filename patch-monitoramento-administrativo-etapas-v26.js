@@ -94,7 +94,7 @@ window.hsjEscolherEtapaV26=function(id){
   const match=(b.getAttribute('onclick')||'').match(/setView\('([^']+)'/);
   if(!match)return null;
   return {stage:match[1],name:b.textContent.trim()};
- }).filter(v=>v&&v.name&&v.stage!=='indicadores'&&v.stage!=='suspensas');
+ }).filter(v=>v&&v.name&&v.stage!=='indicadores');
  const options=visibleStages.map(v=>'<option value="'+v.stage+'" '+(x.stage===v.stage?'selected':'')+'>'+asText(v.name)+'</option>').join('');
  document.getElementById('modal').innerHTML='<div class="back"><div class="modal" style="max-width:570px"><div class="mh"><b>Escolher etapa — '+asText(x.patient_name)+'</b><button class="btn" onclick="document.getElementById(\'modal\').innerHTML=\'\'">Fechar</button></div><div class="mb"><div class="field"><label>Etapa de destino</label><select id="hsjStageV26">'+options+'</select></div><div class="notice">A mudança será compartilhada com os demais computadores. Monitoramentos são encaminhamentos separados, sem retirar o paciente de sua etapa.</div></div><div class="mf"><button class="btn primary" onclick="hsjConfirmarEtapaV26(\''+id+'\')">Confirmar etapa</button></div></div></div>';
 };
