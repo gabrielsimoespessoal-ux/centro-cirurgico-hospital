@@ -87,12 +87,26 @@ const oldNext=window.nextStage;
 window.nextStage=function(id){return window.hsjEscolherEtapaV26(id)};
 window.hsjEscolherEtapaV26=function(id){
  const x=S.rows.find(v=>v.id===id);if(!x)return;
- const options=stageOptions.map(s=>'<option value="'+s+'" '+(x.stage===s?'selected':'')+'>'+asText(labels[s]||s)+'</option>').join('');
+ const visibleTabs=[...document.querySelectorAll('#tabs .tab')];
+ const visibleStages=visibleTabs.map(b=>{
+  if(b.dataset.adminMonitor!==undefined)return {stage:'administrativo',name:'Monitoramento Administrativo'};
+  if(b.dataset.supervisao!==undefined)return {stage:'supervisao',name:'Monitoramento Supervisão'};
+  const match=(b.getAttribute('onclick')||'').match(/setView\('([^']+)'/);
+  if(!match)return null;
+  return {stage:match[1],name:b.textContent.trim()};
+ }).filter(v=>v&&v.name&&v.stage!=='indicadores'&&v.stage!=='suspensas');
+ const options=visibleStages.map(v=>'<option value="'+v.stage+'" '+(x.stage===v.stage?'selected':'')+'>'+asText(v.name)+'</option>').join('');
  document.getElementById('modal').innerHTML='<div class="back"><div class="modal" style="max-width:570px"><div class="mh"><b>Escolher etapa — '+asText(x.patient_name)+'</b><button class="btn" onclick="document.getElementById(\'modal\').innerHTML=\'\'">Fechar</button></div><div class="mb"><div class="field"><label>Etapa de destino</label><select id="hsjStageV26">'+options+'</select></div><div class="notice">A mudança será compartilhada com os demais computadores. Monitoramentos são encaminhamentos separados, sem retirar o paciente de sua etapa.</div></div><div class="mf"><button class="btn primary" onclick="hsjConfirmarEtapaV26(\''+id+'\')">Confirmar etapa</button></div></div></div>';
 };
 window.hsjConfirmarEtapaV26=async function(id){
  const to=document.getElementById('hsjStageV26')?.value,x=S.rows.find(v=>v.id===id);
- if(!x||!stageOptions.includes(to))return;
+ if(!x||!to)return;
+ if(to==='administrativo'||to==='supervisao'){
+  document.getElementById('modal').innerHTML='';
+  return openReferralV18(id,to);
+ }
+ const selectedTab=[...document.querySelectorAll('#tabs .tab')].some(b=>(b.getAttribute('onclick')||'').includes("setView('"+to+"'"));
+ if(!selectedTab)return alert('Selecione uma aba disponível no aplicativo.');
  if(to===x.stage){document.getElementById('modal').innerHTML='';return}
  if(!confirm('Mover '+x.patient_name+' para '+(labels[to]||to)+'?'))return;
  try{
