@@ -47,5 +47,19 @@ window.openResolveV18=function(id){
  }
  return result;
 };
+const previousResolveReferral=window.resolveReferralV18;
+window.resolveReferralV18=async function(id){
+ const destination=document.getElementById('refReturnV18')?.value;
+ if(destination!=='supervisao'&&destination!=='administrativo')return previousResolveReferral.apply(this,arguments);
+ const response=document.getElementById('refResolutionV18')?.value?.trim();
+ if(!response)return alert('Preencha a tratativa / resposta antes de encaminhar.');
+ if(!confirm('Responder e encaminhar ao '+(destination==='supervisao'?'Monitoramento Supervisão':'Monitoramento Administrativo')+'? O paciente permanecerá na etapa atual.'))return;
+ try{
+  await api('/rest/v1/rpc/forward_supervision_monitoring',{method:'POST',body:JSON.stringify({p_referral_id:id,p_resolution:response,p_destination:destination})});
+  document.getElementById('modal').innerHTML='';
+  await load();renderTabs();renderCurrent();
+  alert('Resposta e novo encaminhamento registrados.');
+ }catch(e){alert('Encaminhamento não confirmado: '+e.message)}
+};
 duplicates();monitoring();
 })();
