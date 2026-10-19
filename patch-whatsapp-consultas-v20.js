@@ -29,6 +29,8 @@ window.hsjEnviarConsultaWhatsapp=function(id,draft={}){
  x.surgeon?'*Médico(a):* '+x.surgeon:null,
  '*Local:* Hospital São José',
  '',
+ '*Documentos necessários:* Trazer todos os documentos pessoais, exames e comprovante de residência, com os originais e as respectivas cópias (xerox).',
+ '',
  'Em caso de dúvidas, entre em contato com nossa equipe.'
  ].filter(v=>v!==null);
  const link='https://wa.me/'+phone+'?text='+encodeURIComponent(parts.join('\n'));
