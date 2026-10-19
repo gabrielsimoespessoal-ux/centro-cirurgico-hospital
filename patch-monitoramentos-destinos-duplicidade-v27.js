@@ -40,9 +40,10 @@ window.openResolveV18=function(id){
  const result=prevResolve?.apply(this,arguments);
  const select=document.getElementById('refReturnV18');
  if(select){
-  const before=select.value;const available=onlyTabs().filter(x=>!['supervisao','administrativo','avaliacao_enfermeiro'].includes(x.value));
+  const before=select.value;const available=onlyTabs().filter(x=>x.value!=='avaliacao_enfermeiro');
   select.replaceChildren(...available.map(x=>{const o=document.createElement('option');o.value=x.value;o.textContent=x.name;return o}));
   if(available.some(x=>x.value===before))select.value=before;
+  select.dataset.monitorRouteV28='1';
  }
  return result;
 };
