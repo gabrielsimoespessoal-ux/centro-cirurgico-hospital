@@ -1,7 +1,7 @@
 (()=>{
 if(window.__hsjMapaComplementos20261022)return;
 window.__hsjMapaComplementos20261022=true;
-const tag=/\\n?\\[\\[HSJ_MAPA_V1:([A-Za-z0-9+/=]+)\\]\\]\\s*$/;
+const tag=/\n?\[\[HSJ_MAPA_V1:([A-Za-z0-9+/=]+)\]\]\s*$/;
 const original={roomTable:window.roomTable,roomCard:window.roomCard,editMapPatient:window.editMapPatient,saveMapPatient:window.saveMapPatient};
 function parse(s){
  s=String(s||'');const m=s.match(tag);
@@ -14,14 +14,14 @@ function pack(reserva,antecipada,observacao){
  if(!antecipada&&!observacao)return clean;
  const json=JSON.stringify({antecipada,observacao});
  const binary=unescape(encodeURIComponent(json));
- return clean+'\\n[[HSJ_MAPA_V1:'+btoa(binary)+']]';
+ return clean+'\n[[HSJ_MAPA_V1:'+btoa(binary)+']]';
 }
-function born(x){if(!x.birth_date)return 'Não informada';const s=String(x.birth_date).slice(0,10);const m=s.match(/^(\\d{4})-(\\d{2})-(\\d{2})$/);return m?m[3]+'/'+m[2]+'/'+m[1]:s}
+function born(x){if(!x.birth_date)return 'Não informada';const s=String(x.birth_date).slice(0,10);const m=s.match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?m[3]+'/'+m[2]+'/'+m[1]:s}
 function age(x){if(!x.birth_date)return '—';const d=new Date(String(x.birth_date).slice(0,10)+'T12:00:00');if(!Number.isFinite(d.getTime()))return '—';const now=new Date();let a=now.getFullYear()-d.getFullYear();if(now.getMonth()<d.getMonth()||(now.getMonth()===d.getMonth()&&now.getDate()<d.getDate()))a--;return a>=0?a+' anos':'—'}
 const safe=v=>window.esc(String(v??''));
 function additional(x){const p=parse(x.map_reservations);return '<div style="font-size:12px;line-height:1.55;margin-top:4px"><div><b>Idade:</b> '+age(x)+' &nbsp; <b>Sexo:</b> '+safe(x.sex||x.gender||x.patient_sex||'—')+'</div><div><b>Data de nascimento:</b> '+safe(born(x))+'</div><div><b>Internação antecipada:</b> '+safe(p.antecipada||'Não informado')+'</div><div><b>Observações:</b> '+safe(p.observacao||'—')+'</div></div>'}
-window.roomCard=function(n,rows){let rr=rows.filter(x=>String(x.map_room||'').replace(/\\D/g,'')===String(n));return '<div class="room"><h3>🚪 Sala 0'+n+'</h3><div class="body">'+(rr.length?rr.slice(0,4).map(x=>'<div style="margin-bottom:12px"><b>'+safe(x.patient_name)+'</b> — '+safe(x.surgeon||'')+additional(x)+'</div>').join(''):'Nenhum agendamento')+'</div></div>'};
-window.roomTable=function(n,rows){let rr=rows.filter(x=>String(x.map_room||'').replace(/\\D/g,'')===String(n));return '<div class="section-head" style="margin:12px 0"><h2>Escala — Sala 0'+n+'</h2></div><div class="tablewrap"><table class="table"><thead><tr><th class="actions">AÇÕES</th><th>PACIENTE / DADOS</th><th>IDS</th><th>PROCEDIMENTO</th><th>MÉDICO</th><th>DATA CIRURGIA</th><th>RESERVAS ESPECIAIS</th><th>RESPONSÁVEL</th></tr></thead><tbody>'+(rr.map(x=>'<tr><td>'+actionButtons(x)+' <button class="btn small" onclick="editMapPatient(\''+x.id+'\')">🏥 Mapa</button></td><td><b>'+safe(x.patient_name)+'</b>'+additional(x)+'</td><td>'+safe(x.ids||'')+'</td><td>'+safe(x.procedure_name||'')+'</td><td>'+safe(x.surgeon||'')+'</td><td>'+safe(x.surgery_date||'')+'</td><td>'+safe(parse(x.map_reservations).reserva)+'</td><td>'+safe(x.map_responsible||'')+'</td></tr>').join('')||'<tr><td colspan="8" style="text-align:center;padding:28px">Nenhum paciente alocado nesta sala.</td></tr>')+'</tbody></table></div>'};
+window.roomCard=function(n,rows){let rr=rows.filter(x=>String(x.map_room||'').replace(/\D/g,'')===String(n));return '<div class="room"><h3>🚪 Sala 0'+n+'</h3><div class="body">'+(rr.length?rr.slice(0,4).map(x=>'<div style="margin-bottom:12px"><b>'+safe(x.patient_name)+'</b> — '+safe(x.surgeon||'')+additional(x)+'</div>').join(''):'Nenhum agendamento')+'</div></div>'};
+window.roomTable=function(n,rows){let rr=rows.filter(x=>String(x.map_room||'').replace(/\D/g,'')===String(n));return '<div class="section-head" style="margin:12px 0"><h2>Escala — Sala 0'+n+'</h2></div><div class="tablewrap"><table class="table"><thead><tr><th class="actions">AÇÕES</th><th>PACIENTE / DADOS</th><th>IDS</th><th>PROCEDIMENTO</th><th>MÉDICO</th><th>DATA CIRURGIA</th><th>RESERVAS ESPECIAIS</th><th>RESPONSÁVEL</th></tr></thead><tbody>'+(rr.map(x=>'<tr><td>'+actionButtons(x)+' <button class="btn small" onclick="editMapPatient(\''+x.id+'\')">🏥 Mapa</button></td><td><b>'+safe(x.patient_name)+'</b>'+additional(x)+'</td><td>'+safe(x.ids||'')+'</td><td>'+safe(x.procedure_name||'')+'</td><td>'+safe(x.surgeon||'')+'</td><td>'+safe(x.surgery_date||'')+'</td><td>'+safe(parse(x.map_reservations).reserva)+'</td><td>'+safe(x.map_responsible||'')+'</td></tr>').join('')||'<tr><td colspan="8" style="text-align:center;padding:28px">Nenhum paciente alocado nesta sala.</td></tr>')+'</tbody></table></div>'};
 window.editMapPatient=function(id){
  const x=S.rows.find(r=>r.id===id);if(!x)return alert('Paciente não localizado.');
  const p=parse(x.map_reservations);
