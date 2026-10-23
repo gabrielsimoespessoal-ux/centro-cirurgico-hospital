@@ -8,6 +8,7 @@
 
   window.renderFilaRevalidationV15=function(){
     const all=stageRows('fila');
+    const totalFila=(S.rows||[]).filter(x=>x.active!==false&&x.stage==='fila').length;
     const f=S.filaRevalidationFilter||'';
     const rows=all.filter(x=>!f||String(x.revalidation_status||'').toUpperCase()===f);
     const solicitar=all.filter(x=>String(x.revalidation_status||'').toUpperCase()==='SOLICITAR').length;
@@ -15,7 +16,7 @@
     const c=document.getElementById('content');
     if(!c)return;
     c.innerHTML=`<section class="card">
-      <div class="section-head"><div><h2>📋 Fila de Cirurgia (${rows.length} pacientes)</h2><div class="sub">Fluxo compartilhado entre as máquinas</div></div><button class="btn primary" onclick="editPatient()">+ Novo Paciente</button></div>
+      <div class="section-head"><div><h2>📋 Fila de Cirurgia (${totalFila} pacientes)</h2><div class="sub">Fluxo compartilhado entre as máquinas</div></div><button class="btn primary" onclick="editPatient()">+ Novo Paciente</button></div>
       <div class="notice">Use “Próxima etapa” para avançar o paciente. Ações críticas possuem dupla confirmação.</div>
       <div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin:12px 0;padding:12px;background:#f7f9fc;border:1px solid var(--line);border-radius:9px">
         <div class="field" style="min-width:260px"><label>SOLICITAR REVALIDAÇÃO</label><select id="filaRevalidationV15" onchange="setFilaRevalidationV15(this.value)">
