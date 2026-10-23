@@ -39,16 +39,27 @@ async function api(path,opt={}){const r=await fetch(URL+path,{...opt,headers:{ap
 async function loginNow(){try{const r=await fetch(URL+'/auth/v1/token?grant_type=password',{method:'POST',headers:{apikey:KEY,'Content-Type':'application/json'},body:JSON.stringify({email:document.getElementById('loginEmail').value.trim(),password:document.getElementById('loginPass').value})});const j=await r.json();if(!r.ok)throw new Error(j.error_description||j.msg||j.message);token=j.access_token;localStorage.setItem('sb_access_token',token);localStorage.setItem('sb_refresh_token',j.refresh_token||'');await boot()}catch(e){document.getElementById('loginMsg').textContent=e.message}}
 function showLogin(){document.getElementById('login').classList.remove('hide');document.getElementById('shell').classList.add('hide')}function logout(){localStorage.clear();location.reload()}
 async function boot(){if(!token)return showLogin();uid=jwt().sub;try{let p=await api('/rest/v1/profiles?id=eq.'+uid+'&select=*');S.profile=p?.[0];if(!S.profile?.approved)return alert('Acesso ainda não aprovado.');document.getElementById('login').classList.add('hide');document.getElementById('shell').classList.remove('hide');renderTabs();await load();fillFilters();renderCurrent()}catch(e){alert(e.message);showLogin()}}
+let hsjPatientsLoadPromise=null;
 async function load(){
- const batchSize=1000, rows=[];
- for(let offset=0;offset<1000000;offset+=batchSize){
-  const page=await api('/rest/v1/surgeries?select=*&active=eq.true&order=created_at.desc,id.desc&limit='+batchSize+'&offset='+offset);
-  if(!Array.isArray(page))throw new Error('Resposta inválida ao sincronizar pacientes.');
-  rows.push(...page);
-  if(page.length<batchSize)break;
-  if(offset+batchSize>=1000000)throw new Error('Limite de segurança da paginação atingido.');
- }
- S.rows=rows;
+ if(hsjPatientsLoadPromise)return hsjPatientsLoadPromise;
+ hsjPatientsLoadPromise=(async()=>{
+  const batchSize=500, rows=[], ids=new Set();
+  let fetched=0;
+  for(let offset=0;offset<1000000;offset+=batchSize){
+   const page=await api('/rest/v1/surgeries?select=*&active=eq.true&order=created_at.desc,id.desc&limit='+batchSize+'&offset='+offset);
+   if(!Array.isArray(page))throw new Error('Resposta inválida ao sincronizar pacientes.');
+   for(const patient of page){if(!ids.has(patient.id)){ids.add(patient.id);rows.push(patient)}}
+   fetched+=page.length;
+   if(page.length<batchSize)break;
+   if(offset+batchSize>=1000000)throw new Error('Limite de segurança da paginação atingido.');
+  }
+  if(fetched>0&&rows.length!==fetched)console.warn('Sincronização: registros repetidos durante paginação. Total exclusivo:',rows.length);
+  S.rows=rows;
+  S.lastCompletePatientsSync=new Date().toISOString();
+  return rows;
+ })();
+ try{return await hsjPatientsLoadPromise}
+ finally{hsjPatientsLoadPromise=null}
 }
 function renderTabs(){document.getElementById('tabs').innerHTML=views.map(v=>`<button class="tab ${v===S.view?'on':''}" onclick="setView('${v}',this)">${labels[v]}</button>`).join('')}
 function setView(v,el){S.view=v;document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));el.classList.add('on');renderCurrent()}
