@@ -1,0 +1,14 @@
+(()=>{if(window.__hsjDashboardSummaryV16)return;window.__hsjDashboardSummaryV16=true;
+const names=[['fila','Fila de Cirurgia'],['pendencias','Pendências'],['consulta_preop','Consulta Pré-Op'],['mapa_cirurgico','Mapa Cirúrgico'],['concluida','Fim da Jornada']];
+function summary(){const shell=document.getElementById('shell');if(!shell||shell.classList.contains('hide'))return;let el=document.getElementById('hsjGlobalCountsV16');if(!el){el=document.createElement('section');el.id='hsjGlobalCountsV16';el.className='card';el.style.cssText='margin:12px 16px;padding:12px 16px;';const tabs=document.getElementById('tabs');if(tabs?.parentNode)tabs.parentNode.insertBefore(el,tabs);else document.getElementById('content')?.parentNode?.insertBefore(el,document.getElementById('content'));}
+const active=(S.rows||[]).filter(r=>r.active!==false),count=s=>active.filter(r=>r.stage===s).length;
+const items=[['TOTAL DE PACIENTES',active.length],...names.map(([s,n])=>[n,count(s)]),['Outras etapas',active.length-names.reduce((n,[s])=>n+count(s),0)]];
+el.innerHTML='<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;align-items:center"><b>📊 Resumo geral da Jornada Cirúrgica</b><small>Atualização entre computadores a cada 15 segundos</small></div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-top:9px">'+items.map(([n,v],i)=>'<div style="background:#edf3fb;border:1px solid #dae4f2;border-radius:8px;padding:9px"><div style="font-size:11px;font-weight:700;color:#445874">'+n+'</div><div style="font-size:23px;font-weight:800;color:#173d7c">'+v.toLocaleString('pt-BR')+'</div></div>').join('')+'</div>'; }
+function completed(){if(S.view!=='concluida')return;const root=document.getElementById('content');if(!root)return;root.querySelectorAll('tbody tr').forEach(tr=>{if(tr.querySelector('[data-hsj-done]'))return;const cell=tr.querySelector('td:last-child');if(!cell||/Nenhum paciente/.test(tr.textContent))return;const tag=document.createElement('strong');tag.dataset.hsjDone='1';tag.style.cssText='display:inline-block;background:#e0f5e8;color:#166436;border-radius:6px;padding:5px;margin:5px';tag.textContent='✅ JORNADA FINALIZADA';cell.appendChild(tag)});}
+const oldRender=window.renderCurrent;window.renderCurrent=function(){const result=oldRender.apply(this,arguments);summary();completed();return result};
+const oldLoad=window.load;window.load=async function(){const result=await oldLoad.apply(this,arguments);summary();return result};
+const oldSurvey=window.hsjSubmitSatisfaction;window.hsjSubmitSatisfaction=async function(id){await oldSurvey(id);summary()};
+const oldDecline=window.hsjDeclineSurvey;window.hsjDeclineSurvey=async function(id){await oldDecline(id);summary()};
+setInterval(()=>{summary();if(S.view==='concluida')completed()},15000);
+summary();
+})();
