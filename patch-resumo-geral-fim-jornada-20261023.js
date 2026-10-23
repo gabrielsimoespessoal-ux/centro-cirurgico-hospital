@@ -1,5 +1,5 @@
 (()=>{if(window.__hsjDashboardSummaryV16)return;window.__hsjDashboardSummaryV16=true;
-const names=[['fila','Fila de Cirurgia'],['pendencias','Pendências'],['consulta_preop','Consulta Pré-Op'],['mapa_cirurgico','Mapa Cirúrgico'],['concluida','Fim da Jornada']];
+const names=[['fila','Fila de Cirurgia'],['consulta_preop','Consulta Pré-Op'],['mapa_cirurgico','Mapa Cirúrgico'],['concluida','Fim da Jornada']];
 function summary(){const shell=document.getElementById('shell');if(!shell||shell.classList.contains('hide'))return;let el=document.getElementById('hsjGlobalCountsV16');if(!el){el=document.createElement('section');el.id='hsjGlobalCountsV16';el.className='card';el.style.cssText='margin:12px 16px;padding:12px 16px;';const tabs=document.getElementById('tabs');if(tabs?.parentNode)tabs.parentNode.insertBefore(el,tabs);else document.getElementById('content')?.parentNode?.insertBefore(el,document.getElementById('content'));}
 const active=(S.rows||[]).filter(r=>r.active!==false),count=s=>active.filter(r=>r.stage===s).length;
 const items=[['TOTAL DE PACIENTES',active.length],...names.map(([s,n])=>[n,count(s)]),['Outras etapas',active.length-names.reduce((n,[s])=>n+count(s),0)]];
