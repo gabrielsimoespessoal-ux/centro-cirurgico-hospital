@@ -23,6 +23,8 @@ const originalSave=window.hsjSaveSurgery;
 window.hsjConfirmSurgeryAndMap=async function(id){if(await originalSave(id)){document.getElementById('modal').innerHTML='';S.view='mapa_cirurgico';renderTabs();renderCurrent();}};
 const show=window.hsjAgendaSurgery;
 window.hsjAgendaSurgery=async function(id){await show(id);const button=[...document.querySelectorAll('#modal .mf button')].find(b=>/Salvar triagem e agendar/.test(b.textContent));if(button)button.onclick=()=>window.hsjConfirmSurgeryAndMap(id)};
+const existingRenderConsult=window.renderConsult;
+window.renderConsult=function(){const r=existingRenderConsult.apply(this,arguments);if(document.querySelector('#consultTableBox .notice')?.textContent.includes('Agende a cirurgia')){const box=document.getElementById('consultTableBox');const rows=box?.querySelectorAll('tbody tr');rows?.forEach(tr=>{const raw=tr.querySelector('button[onclick^="hsjAgendaSurgery"]')?.getAttribute('onclick')||'';const id=raw.match(/'([0-9a-f-]{36})'/)?.[1];const x=S.rows.find(r=>r.id===id);if(x?.stage==='mapa_cirurgico'||x?.stage==='concluida')tr.remove()})}return r;};
 const oldTabs=window.renderTabs;
 window.renderTabs=function(){const index=views.indexOf('entrevista_tecnico');if(index>=0)views.splice(index,1);const r=oldTabs.apply(this,arguments);document.querySelectorAll('#tabs .tab').forEach(b=>{if(/triagem de enfermagem/i.test(b.textContent))b.remove()});return r;};
 window.renderTabs();
