@@ -10,9 +10,9 @@ async function countFromDatabase(stage){
  });
  if(!response.ok)throw new Error('Falha na contagem ('+response.status+')');
  const range=response.headers.get('content-range')||'';
- const match=range.match(/\\/(\\d+)$/);
- if(!match)throw new Error('Banco não informou a contagem completa.');
- return Number(match[1]);
+ const rawCount=range.split('/').pop();
+ if(!rawCount||rawCount==='*'||!Number.isSafeInteger(Number(rawCount)))throw new Error('Banco não informou a contagem completa.');
+ return Number(rawCount);
 }
 async function refreshCounts(){
  if(countBusy||document.hidden||document.getElementById('shell')?.classList.contains('hide'))return;
