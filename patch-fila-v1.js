@@ -21,7 +21,7 @@ editPatient=function(id=''){
  ${field('NOME COMPLETO *','patient_name',x.patient_name)}${field('IDS','ids',x.ids)}${field('CPF','cpf',x.cpf)}
  ${field('CONTATO / WHATSAPP','phone',x.phone)}${field('DATA DE SOLICITAÇÃO DO AIH','aih_request_date',x.aih_request_date,'date')}${field('DATA CADASTRO IDS','ids_register_date',x.ids_register_date,'date')}
  ${smartHtml('PROCEDIMENTO CIRÚRGICO *','procedure_name',x.procedure_name,procedures,'span2')}${field('CÓDIGO DO PROCEDIMENTO','sigtap_code',x.sigtap_code)}
- ${selectHtml('TIPO DE SOLICITAÇÃO','request_type',x.request_type,reqTypes)}${selectHtml('ESPECIALIDADE','specialty',x.specialty,specialties)}${smartHtml('MÉDICO CIRURGIÃO','surgeon',x.surgeon,doctors)}
+ ${selectHtml('TIPO DE SOLICITAÇÃO','request_type',x.request_type,reqTypes)}${smartHtml('ESPECIALIDADE','specialty',x.specialty,smartValues('specialty',specialties))}${smartHtml('MÉDICO CIRURGIÃO','surgeon',x.surgeon,doctors)}
  ${field('DATA DE NASCIMENTO (DN)','birth_date',x.birth_date,'date')}${field('DATA DA AUTORIZAÇÃO','authorization_date',x.authorization_date,'date')}${selectHtml('MÊS DA AUTORIZAÇÃO','authorization_month',x.authorization_month,months)}
  ${field('DATA DA PROGRAMAÇÃO','programming_date',x.programming_date,'date')}${selectHtml('SOLICITAR REVALIDAÇÃO','revalidation_status',x.revalidation_status||'',revalid)}${selectField('SITUAÇÃO DO PACIENTE','patient_status',x.patient_status,patientStatuses)}
  ${selectHtml('SITUAÇÃO DA SOLICITAÇÃO','request_status',x.request_status,requestStatuses)}${field('DATA DA REMARCAÇÃO','reschedule_date',x.reschedule_date,'date')}${field('DATA DA CIRURGIA','surgery_date',x.surgery_date,'date')}
