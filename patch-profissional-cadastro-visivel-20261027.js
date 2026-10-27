@@ -14,6 +14,9 @@ function ensure(){
  const label=document.createElement('label');label.htmlFor='f_registration_professional';label.textContent='PROFISSIONAL RESPONSÁVEL PELO CADASTRO'+(isNew?' *':'');
  const input=document.createElement('input');input.id='f_registration_professional';input.name='registration_professional';input.type='text';input.autocomplete='name';input.placeholder='Digite o nome completo do profissional';
  input.style.width='100%';
+ const save=modal.querySelector('.mf button[onclick*="savePatient"]');
+ const id=(save?.getAttribute('onclick')||'').match(/savePatient\\(['\"]([^'\"]+)['\"]\\)/)?.[1];
+ if(id&&typeof S!=='undefined')input.value=(S.rows||[]).find(row=>String(row.id)===String(id))?.registration_professional||'';
  box.append(label,input);
  const anchor=grid.querySelector('#f_specialty')?.closest('.field');
  if(anchor)anchor.insertAdjacentElement('afterend',box);else grid.appendChild(box);
