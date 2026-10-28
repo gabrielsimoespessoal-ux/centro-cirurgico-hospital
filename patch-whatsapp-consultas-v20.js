@@ -18,6 +18,8 @@ window.hsjEnviarConsultaWhatsapp=function(id,draft={}){
  if(!x.consultation_date||!x.consultation_time)return alert('Salve a data e o horário da consulta antes de abrir o WhatsApp.');
  const phone=numberBR(x.phone);
  if(!phone)return alert('Telefone do paciente não informado ou inválido. Informe o WhatsApp com DDD no cadastro do paciente antes do envio.');
+ const responsible=String(document.getElementById('f_registration_professional')?.value?.trim()||x.registration_professional||x.appointment_responsible||'').trim();
+ if(!responsible)return alert('Informe e salve o profissional responsável pelo agendamento antes de enviar o lembrete.');
  const parts=[
  '🏥 *HOSPITAL SÃO JOSÉ*',
  '*Confirmação de agendamento de consulta*',
@@ -28,6 +30,7 @@ window.hsjEnviarConsultaWhatsapp=function(id,draft={}){
  x.specialty?'*Especialidade:* '+x.specialty:null,
  x.surgeon?'*Médico(a):* '+x.surgeon:null,
  '*Local:* Hospital São José',
+ '*Profissional responsável pelo agendamento:* '+responsible,
  '',
  '*Documentos necessários:* Trazer todos os documentos pessoais, exames e comprovante de residência, com os originais e as respectivas cópias (xerox).',
  '',
