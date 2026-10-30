@@ -53,7 +53,7 @@ function orphanButtons(){
   const txt=tr.textContent||'';
   if(!/Paciente não encontrado|Atendimento não localizado|Não encontrado/i.test(txt)||tr.dataset.hsjCheckingOrphan)return;
   const on=[...tr.querySelectorAll('[onclick]')].map(x=>x.getAttribute('onclick')||'').join(' ');
-  const id=on.match(/(?:openResolveV18|hsjResponderAdminV26|hsjRespondClaim)\\('([0-9a-f-]{36})'\\)/)?.[1];
+  const id=on.match(/(?:openResolveV18|hsjResponderAdminV26|hsjRespondClaim)\('([0-9a-f-]{36})'\)/)?.[1];
   const r=pending.find(x=>x.id===id);
   if(!r)return;
   tr.dataset.hsjCheckingOrphan='1';
