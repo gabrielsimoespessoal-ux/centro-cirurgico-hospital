@@ -51,4 +51,33 @@ f.addEventListener('load',()=>{try{const d=f.contentDocument;const inject=()=>{i
   }catch(e){console.error('Instalação do relatório de monitoramento',e)}
  });
 })();
+</script><script>
+(function(){
+ const frame=document.getElementById('appFrame');
+ if(!frame)return;
+ frame.addEventListener('load',()=>{
+  try{
+   const doc=frame.contentDocument;
+   const install=()=>{
+    if(doc.querySelector('script[data-hsj-monitor-filters-20261030]'))return;
+    const script=doc.createElement('script');
+    script.dataset.hsjMonitorFilters20261030='1';
+    script.src='/patch-filtros-medico-especialidade-monitoramentos-20261030.js?v=20261030-01';
+    doc.head.appendChild(script);
+   };
+   const target='patch-relatorios-monitoramentos-20261030.js';
+   const attach=node=>{
+    if(node?.tagName!=='SCRIPT'||!node.src?.includes(target))return false;
+    if(window.__hsjMonitorFilterAttached)return true;
+    node.addEventListener('load',install,{once:true});
+    return true;
+   };
+   if([...doc.scripts].some(attach))return;
+   const observer=new MutationObserver(records=>{
+    for(const rec of records)for(const node of rec.addedNodes)if(attach(node)){observer.disconnect();return}
+   });
+   observer.observe(doc.head,{childList:true});
+  }catch(err){console.error('Erro ao instalar filtros dos monitoramentos',err)}
+ });
+})();
 </script></body></html>
