@@ -20,19 +20,32 @@ function notice(){
  const input=document.createElement('input');input.type='search';input.placeholder='Digite nome, CPF ou IDS do paciente';input.style.cssText='width:min(520px,100%);padding:8px;border:1px solid #bed0e6;border-radius:6px';
  input.value=window.__hsjMapaConsultaDireta||document.getElementById('hsjBuscaLocal20261015')?.value||'';
  const results=document.createElement('div');results.style.marginTop='7px';
- function populate(){
-  const q=input.value.trim().toLocaleLowerCase('pt-BR');window.__hsjMapaConsultaDireta=input.value;results.replaceChildren();
+ let searchGeneration=0;
+ async function populate(){
+  const q=input.value.trim();window.__hsjMapaConsultaDireta=q;results.replaceChildren();
+  const generation=++searchGeneration;
   if(q.length<3)return;
-  const matches=(S.rows||[]).filter(x=>x.stage==='mapa_cirurgico'&&x.active!==false&&[x.patient_name,x.cpf,x.ids].some(v=>String(v||'').toLocaleLowerCase('pt-BR').includes(q))).slice(0,20);
-  if(!matches.length){results.textContent='Nenhum paciente localizado no Mapa Cirúrgico com esse termo.';return}
-  for(const row of matches){
-   const item=document.createElement('div');item.style.cssText='padding:7px 0;border-top:1px solid #edf1f7;display:flex;align-items:center;gap:8px;flex-wrap:wrap';
-   const name=document.createElement('strong');name.style.fontSize='12px';name.textContent=row.patient_name+' — '+(row.surgery_date||'Sem data')+(row.map_room?' — '+row.map_room:' — Sem sala definida');item.appendChild(name);
-   for(const [label,action] of [['✏ Editar cadastro',()=>window.editPatient?.(row.id)],['🏥 Editar dados do mapa',()=>window.editMapPatient?.(row.id)]]){
-    const b=document.createElement('button');b.type='button';b.className='btn small';b.textContent=label;b.onclick=action;item.appendChild(b);
+  results.textContent='Consultando cadastro diretamente no banco...';
+  try{
+   const clean=q.replace(/[%,.*()]/g,' ').trim();
+   const condition='or=(patient_name.ilike.*'+encodeURIComponent(clean.replace(/\s+/g,'*'))+'*,ids.ilike.*'+encodeURIComponent(clean.replace(/\s+/g,'*'))+'*,cpf.ilike.*'+encodeURIComponent(clean.replace(/\s+/g,'*'))+'*)';
+   const found=await api('/rest/v1/surgeries?select=*&stage=eq.mapa_cirurgico&active=eq.true&'+condition+'&limit=30');
+   if(generation!==searchGeneration||!results.isConnected)return;
+   results.replaceChildren();
+   if(!Array.isArray(found)||!found.length){results.textContent='Nenhum cadastro encontrado no banco para essa pesquisa.';return}
+   const idx=new Map((S.rows||[]).map((r,i)=>[String(r.id),i]));
+   for(const row of found){
+    const pos=idx.get(String(row.id));
+    if(pos===undefined){S.rows.push(row);idx.set(String(row.id),S.rows.length-1)}
+    else S.rows[pos]=row;
+    const item=document.createElement('div');item.style.cssText='padding:7px 0;border-top:1px solid #edf1f7;display:flex;align-items:center;gap:8px;flex-wrap:wrap';
+    const name=document.createElement('strong');name.style.fontSize='12px';name.textContent=row.patient_name+' — '+(row.surgery_date||'Sem data')+(row.map_room?' — '+row.map_room:' — Sem sala definida');item.appendChild(name);
+    for(const [label,action] of [['✏ Editar cadastro',()=>window.editPatient?.(row.id)],['🏥 Editar dados do mapa',()=>window.editMapPatient?.(row.id)]]){
+     const b=document.createElement('button');b.type='button';b.className='btn small';b.textContent=label;b.onclick=action;item.appendChild(b);
+    }
+    results.appendChild(item);
    }
-   results.appendChild(item);
-  }
+  }catch(e){if(generation===searchGeneration)results.textContent='Falha na consulta: '+(e?.message||e)}
  }
  input.addEventListener('input',populate);direct.appendChild(input);direct.appendChild(results);panel.appendChild(direct);populate();
  if(!running&&!error&&undated){const warn=document.createElement('div');warn.style.marginTop='6px';warn.textContent='Atenção: cadastros sem data de cirurgia podem não aparecer quando há filtro por data. Corrija a data no cadastro original.';panel.appendChild(warn)}
