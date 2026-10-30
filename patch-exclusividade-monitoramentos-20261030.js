@@ -51,13 +51,34 @@ function orphanButtons(){
  if(!monitors.has(S.view))return;
  document.querySelectorAll('#content tr').forEach(tr=>{
   const txt=tr.textContent||'';
-  if(!/Paciente não encontrado|Atendimento não localizado|Não encontrado/i.test(txt))return;
+  if(!/Paciente não encontrado|Atendimento não localizado|Não encontrado/i.test(txt)||tr.dataset.hsjCheckingOrphan)return;
   const on=[...tr.querySelectorAll('[onclick]')].map(x=>x.getAttribute('onclick')||'').join(' ');
-  const id=on.match(/(?:openResolveV18|hsjResponderAdminV26|hsjRespondClaim)\('([0-9a-f-]{36})'\)/)?.[1];
+  const id=on.match(/(?:openResolveV18|hsjResponderAdminV26|hsjRespondClaim)\\('([0-9a-f-]{36})'\\)/)?.[1];
   const r=pending.find(x=>x.id===id);
-  if(!r||tr.querySelector('[data-hsj-apagar-orphan]'))return;
-  const b=document.createElement('button');b.type='button';b.className='btn small red';b.textContent='🗑 Apagar';b.dataset.hsjApagarOrphan='1';b.style.margin='5px';
-  b.onclick=()=>window.hsjApagarOrfao20261030(id);
+  if(!r)return;
+  tr.dataset.hsjCheckingOrphan='1';
+  api('/rest/v1/surgeries?select=id,patient_name,active&id=eq.'+encodeURIComponent(r.surgery_id)+'&limit=1').then(found=>{
+   if(!tr.isConnected)return;
+   if(found?.length){
+    const name=tr.querySelector('td:first-child b');
+    if(name)name.textContent=found[0].patient_name||'Paciente cadastrado';
+    if(!tr.querySelector('[data-hsj-go-patient]')){
+     const btn=document.createElement('button');btn.type='button';btn.className='btn small';
+     btn.textContent='👤 Consultar cadastro';btn.dataset.hsjGoPatient='1';
+     btn.onclick=()=>window.hsjConsultarCadastroV24?.(found[0].id);
+     tr.lastElementChild?.append(btn);
+    }
+    return;
+   }
+   if(tr.querySelector('[data-hsj-apagar-orphan]'))return;
+   const btn=document.createElement('button');btn.type='button';btn.className='btn small red';
+   btn.textContent='🗑 Apagar';btn.dataset.hsjApagarOrphan='1';btn.style.margin='5px';
+   btn.onclick=()=>window.hsjApagarOrfao20261030(id);
+   tr.lastElementChild?.append(btn);
+  }).catch(e=>{delete tr.dataset.hsjCheckingOrphan;console.warn('Verificação do cadastro falhou',e)});
+ });
+}
+window.hsjApagarOrfao20261030(id);
   tr.lastElementChild?.append(b);
  });
 }
