@@ -25,6 +25,7 @@ window.hsjEnviarConsultaWhatsapp=function(id,draft={}){
  '*Confirmação de agendamento de consulta*',
  '',
  'Olá! Sua consulta foi agendada com as seguintes informações:',
+ '👤 *Paciente:* '+String(x.patient_name||'').trim(),
  '📅 *Data:* '+dateBR(x.consultation_date),
  '🕒 *Horário:* '+String(x.consultation_time).slice(0,5),
  x.specialty?'*Especialidade:* '+x.specialty:null,
