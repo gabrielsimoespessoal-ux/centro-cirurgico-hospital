@@ -31,4 +31,24 @@ f.addEventListener('load',()=>{try{const d=f.contentDocument;const inject=()=>{i
   }catch(e){console.error('Falha ao iniciar exclusividade dos monitoramentos:',e)}
  });
 })();
+</script><script>
+(function(){
+ const f=document.getElementById('appFrame');
+ f.addEventListener('load',()=>{
+  try{
+   const d=f.contentDocument;
+   const install=()=>{
+    if(d.querySelector('script[data-hsj-print-monitor-20261030]'))return;
+    const s=d.createElement('script');s.dataset.hsjPrintMonitor20261030='1';
+    s.src='/patch-relatorios-monitoramentos-20261030.js?v=20261030-01';
+    d.head.appendChild(s);
+   };
+   const target='patch-exclusividade-monitoramentos-20261030.js';
+   const attach=n=>{if(n?.tagName!=='SCRIPT'||!n.src?.includes(target))return false;n.addEventListener('load',install,{once:true});return true};
+   if([...d.scripts].some(attach))return;
+   const obs=new MutationObserver(records=>{for(const r of records)for(const n of r.addedNodes)if(attach(n)){obs.disconnect();return}});
+   obs.observe(d.head,{childList:true});
+  }catch(e){console.error('Instalação do relatório de monitoramento',e)}
+ });
+})();
 </script></body></html>
