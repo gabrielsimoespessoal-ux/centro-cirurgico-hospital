@@ -33,5 +33,24 @@ const oldRender=window.renderCurrent;
 window.renderCurrent=function(){if(S.view==='historico_mapa_hsj'){render();if(!state.loaded)window.hsjHMLoad();return}return oldRender.apply(this,arguments)};
 const oldTabs=window.renderTabs;
 window.renderTabs=function(){oldTabs.apply(this,arguments);const t=document.getElementById('tabs');if(!t)return;let b=t.querySelector('[data-hsj-history-map]');if(!b){b=document.createElement('button');b.className='tab';b.dataset.hsjHistoryMap='1';b.onclick=()=>{S.view='historico_mapa_hsj';renderTabs();renderCurrent()};t.appendChild(b)}b.textContent='📚 Histórico do Mapa Cirúrgico';b.classList.toggle('on',S.view==='historico_mapa_hsj')};
+window.hsjAbrirHistoricoDoMapa=function(){
+ const from=document.getElementById('mapFromV11')?.value||'';
+ const to=document.getElementById('mapToV11')?.value||'';
+ state.from=from;state.to=to;state.doctor='';state.specialty='';state.status='';
+ S.view='historico_mapa_hsj';renderTabs();renderCurrent();
+};
+const previousMap=window.renderMap;
+window.renderMap=function(){
+ const out=previousMap.apply(this,arguments);
+ if(S.view!=='mapa_cirurgico')return out;
+ const head=document.querySelector('#content .map-print-v11 .section-head');
+ if(head&&!head.querySelector('[data-hsj-open-history]')){
+  const button=document.createElement('button');button.type='button';button.className='btn primary';
+  button.dataset.hsjOpenHistory='1';button.textContent='📚 Consultar mapa de datas anteriores';
+  button.onclick=window.hsjAbrirHistoricoDoMapa;
+  head.appendChild(button);
+ }
+ return out;
+};
 renderTabs();
 })();
