@@ -115,4 +115,22 @@ f.addEventListener('load',()=>{try{const d=f.contentDocument;const inject=()=>{i
   }catch(e){console.error('Fim da jornada: falha ao instalar devolução',e)}
  });
 })();
+</script><script>
+(function(){
+ const frame=document.getElementById('appFrame');if(!frame)return;
+ frame.addEventListener('load',()=>{
+  try{
+   const doc=frame.contentDocument;
+   const install=()=>{
+    if(doc.querySelector('script[data-hsj-historical-map]'))return;
+    const s=doc.createElement('script');s.dataset.hsjHistoricalMap='1';s.src='/patch-historico-mapa-20261030.js?v=20261030-01';doc.head.appendChild(s);
+   };
+   const target='patch-retorno-fim-jornada-20261030.js';
+   const bind=n=>{if(n?.tagName!=='SCRIPT'||!n.src?.includes(target))return false;n.addEventListener('load',install,{once:true});return true};
+   if([...doc.scripts].some(bind))return;
+   const observer=new MutationObserver(records=>{for(const record of records)for(const node of record.addedNodes)if(bind(node)){observer.disconnect();return}});
+   observer.observe(doc.head,{childList:true});
+  }catch(e){console.error('Falha ao abrir histórico do mapa cirúrgico',e)}
+ });
+})();
 </script></body></html>
