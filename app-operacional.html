@@ -100,4 +100,19 @@ f.addEventListener('load',()=>{try{const d=f.contentDocument;const inject=()=>{i
   }catch(e){console.error('Falha ao instalar transferência de monitoramentos',e)}
  });
 })();
+</script><script>
+(function(){
+ const frame=document.getElementById('appFrame');if(!frame)return;
+ frame.addEventListener('load',()=>{
+  try{
+   const doc=frame.contentDocument;
+   const add=()=>{if(doc.querySelector('script[data-hsj-final-return-20261030]'))return;const s=doc.createElement('script');s.dataset.hsjFinalReturn20261030='1';s.src='/patch-retorno-fim-jornada-20261030.js?v=20261030-01';doc.head.appendChild(s)};
+   const target='patch-transferencia-entre-monitoramentos-20261030.js';
+   const attach=n=>{if(n?.tagName!=='SCRIPT'||!n.src?.includes(target))return false;n.addEventListener('load',add,{once:true});return true};
+   if([...doc.scripts].some(attach))return;
+   const obs=new MutationObserver(records=>{for(const r of records)for(const n of r.addedNodes)if(attach(n)){obs.disconnect();return}});
+   obs.observe(doc.head,{childList:true});
+  }catch(e){console.error('Fim da jornada: falha ao instalar devolução',e)}
+ });
+})();
 </script></body></html>
