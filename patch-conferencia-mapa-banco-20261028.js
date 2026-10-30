@@ -18,7 +18,7 @@ function notice(){
  const direct=document.createElement('div');direct.style.cssText='margin-top:10px;padding:9px;border:1px solid #c7d7ef;border-radius:7px;background:#fff';
  const title=document.createElement('div');title.style.cssText='font-size:12px;font-weight:700;margin-bottom:6px';title.textContent='🔎 Localizar e editar paciente do Mapa Cirúrgico';direct.appendChild(title);
  const input=document.createElement('input');input.type='search';input.placeholder='Digite nome, CPF ou IDS do paciente';input.style.cssText='width:min(520px,100%);padding:8px;border:1px solid #bed0e6;border-radius:6px';
- input.value=window.__hsjMapaConsultaDireta||document.getElementById('hsjBuscaInput20261015')?.value||'';
+ input.value=window.__hsjMapaConsultaDireta||document.getElementById('hsjBuscaLocal20261015')?.value||'';
  const results=document.createElement('div');results.style.marginTop='7px';
  function populate(){
   const q=input.value.trim().toLocaleLowerCase('pt-BR');window.__hsjMapaConsultaDireta=input.value;results.replaceChildren();
