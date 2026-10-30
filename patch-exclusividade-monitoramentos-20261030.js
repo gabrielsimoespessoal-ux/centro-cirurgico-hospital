@@ -29,24 +29,52 @@ window.filtered=function(rows){
 function cleanInbox(){
  if(!monitors.has(S.view))return;
  const root=document.getElementById('content');if(!root)return;
- let collisions=0;
  root.querySelectorAll('button[onclick*="openResolveV18("],button[onclick*="hsjResponderAdminV26("],button[onclick*="hsjRespondClaim("]').forEach(btn=>{
   const raw=btn.getAttribute('onclick')||'';
   const id=raw.match(/'([0-9a-f-]{36})'/i)?.[1];
   const r=pending.find(v=>v.id===id);
   if(!r)return;
-  const first=firstFor(r.surgery_id);
   const tr=btn.closest('tr');
   if(!tr)return;
-  if(first && first.id!==r.id){tr.remove();collisions++;return}
-  if(activeFor(r.surgery_id).length>1&&!tr.querySelector('[data-hsj-other-pending]')){
-   const label=document.createElement('div');label.dataset.hsjOtherPending='1';label.className='sub';
-   label.textContent='⚠ Há outro encaminhamento pendente, preservado no histórico. Ele ficará disponível após esta tratativa.';
-   btn.parentElement.appendChild(label);
+  const items=activeFor(r.surgery_id);
+  if(items.length>1&&!tr.querySelector('[data-hsj-resolve-duplicate]')){
+   const label=document.createElement('div');label.className='sub';label.style.color='#a05200';
+   label.textContent='⚠ DUPLICIDADE: '+items.length+' encaminhamentos ativos para o mesmo paciente.';
+   const choose=document.createElement('button');choose.type='button';choose.className='btn small';
+   choose.dataset.hsjResolveDuplicate='1';choose.textContent='Escolher onde permanecer';
+   choose.style.margin='4px';
+   choose.onclick=()=>window.hsjEscolherMonitorUnico20261030(r.surgery_id);
+   btn.parentElement.append(label,choose);
   }
  });
- if(collisions){const e=document.createElement('div');e.className='notice';e.style.margin='8px 0';e.textContent='⚠ '+collisions+' encaminhamento(s) simultâneo(s) aguardando a conclusão do atendimento prioritário. Nenhum registro foi excluído.';root.prepend(e)}
 }
+window.hsjEscolherMonitorUnico20261030=function(patientId){
+ const items=activeFor(patientId);
+ const patient=S.rows.find(x=>String(x.id)===String(patientId));
+ if(items.length<2)return alert('Não há mais encaminhamentos simultâneos para este paciente.');
+ const safe=s=>String(s??'').replace(/[&<>"']/g,k=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[k]));
+ const names={avaliacao_enfermeiro:'Monitoramento Enfermeiro',supervisao:'Monitoramento Supervisão',monitoramento_administrativo:'Monitoramento Administrativo'};
+ const choices=items.map(r=>'<label style="display:block;border:1px solid #d6dfed;border-radius:7px;padding:12px;margin:8px 0"><input type="radio" name="hsjChooseMonitor" value="'+safe(r.id)+'"> <b>'+safe(names[r.__dest]||r.__dest)+'</b><div class="sub">'+safe(r.reason||'')+'</div></label>').join('');
+ document.getElementById('modal').innerHTML='<div class="back"><div class="modal"><div class="mh"><b>⚠ Encaminhamentos duplicados — '+safe(patient?.patient_name||patientId)+'</b><button class="btn" onclick="document.getElementById(\'modal\').innerHTML=\'\'">Fechar</button></div><div class="mb"><p>Escolha o único monitoramento que deverá permanecer ativo. Os demais serão encerrados administrativamente por duplicidade, com justificativa e histórico preservados. Isso não equivale a uma resposta clínica.</p>'+choices+'</div><div class="mf"><button class="btn primary" onclick="hsjConfirmarMonitorUnico20261030(\''+safe(patientId)+'\')">Confirmar permanência</button></div></div></div>';
+};
+window.hsjConfirmarMonitorUnico20261030=async function(patientId){
+ const selected=document.querySelector('input[name="hsjChooseMonitor"]:checked')?.value;
+ if(!selected)return alert('Selecione o monitoramento que deverá permanecer.');
+ const items=activeFor(patientId),remaining=items.filter(x=>x.id!==selected);
+ if(!items.some(x=>x.id===selected)||!remaining.length)return alert('Atualize e revise os encaminhamentos.');
+ if(remaining.some(x=>x.__table!=='supervision_referrals'))return alert('Há encaminhamentos em outros tipos de monitoramento. Para evitar encerramento parcial, essa combinação requer validação adicional no banco.');
+ if(!confirm('Manter apenas a etapa selecionada? Os outros '+remaining.length+' encaminhamento(s) serão encerrados administrativamente, sem apagar o histórico.'))return;
+ try{
+  for(const r of remaining){
+   const patient=S.rows.find(x=>String(x.id)===String(patientId));
+   const update={status:'respondido',resolution:'Encerrado administrativamente por duplicidade de encaminhamento, a pedido do operador. Sem tratativa clínica. Mantido encaminhamento '+selected+'.',return_stage:patient?.stage||r.origin_stage||'fila',resolved_at:new Date().toISOString(),resolved_by:uid};
+   const rows=await api('/rest/v1/supervision_referrals?id=eq.'+encodeURIComponent(r.id)+'&status=eq.aguardando',{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify(update)});
+   if(!Array.isArray(rows)||rows.length!==1)throw Error('Não foi possível confirmar o encerramento do encaminhamento '+r.id);
+  }
+  document.getElementById('modal').innerHTML='';
+  await load();renderCurrent();alert('Duplicidade regularizada. Apenas o monitoramento escolhido permanece pendente.');
+ }catch(e){await load();renderCurrent();alert('Falha ao regularizar: '+e.message+'. Confira o resultado antes de repetir.')}
+};
 function orphanButtons(){
  if(!monitors.has(S.view))return;
  document.querySelectorAll('#content tr').forEach(tr=>{
@@ -76,10 +104,6 @@ function orphanButtons(){
    btn.onclick=()=>window.hsjApagarOrfao20261030(id);
    tr.lastElementChild?.append(btn);
   }).catch(e=>{delete tr.dataset.hsjCheckingOrphan;console.warn('Verificação do cadastro falhou',e)});
- });
-}
-window.hsjApagarOrfao20261030(id);
-  tr.lastElementChild?.append(b);
  });
 }
 window.hsjApagarOrfao20261030=async function(id){
