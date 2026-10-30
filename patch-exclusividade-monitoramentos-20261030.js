@@ -96,7 +96,6 @@ function orphanButtons(){
      btn.onclick=()=>window.hsjConsultarCadastroV24?.(found[0].id);
      tr.lastElementChild?.append(btn);
     }
-    return;
    }
    if(tr.querySelector('[data-hsj-apagar-orphan]'))return;
    const btn=document.createElement('button');btn.type='button';btn.className='btn small red';
@@ -109,14 +108,15 @@ function orphanButtons(){
 window.hsjApagarOrfao20261030=async function(id){
  const r=pending.find(x=>x.id===id);
  if(!r||!UUID.test(id))return alert('Encaminhamento não localizado.');
+ if(!confirm('Retirar somente este encaminhamento da lista de pendentes? O cadastro do paciente NÃO será excluído. O histórico será preservado com registro de cancelamento administrativo.'))return;
  try{
-  const patient=await api('/rest/v1/surgeries?select=id,patient_name,active&id=eq.'+encodeURIComponent(r.surgery_id)+'&limit=1');
-  if(patient.length)return alert('Este encaminhamento possui um cadastro no banco ('+patient[0].patient_name+'). Não pode ser apagado como órfão. Atualize a tela para localizar o paciente.');
-  if(!confirm('Apagar SOMENTE o encaminhamento sem cadastro? Esta ação é irreversível. Nenhum outro paciente será alterado.'))return;
-  const deleted=await api('/rest/v1/'+r.__table+'?id=eq.'+encodeURIComponent(r.id)+'&status=eq.aguardando',{method:'DELETE',headers:{Prefer:'return=representation'}});
-  if(!Array.isArray(deleted)||deleted.length!==1)throw Error('O banco não confirmou a exclusão. Verifique as permissões ou se o registro já foi alterado.');
-  await load();renderCurrent();alert('Encaminhamento órfão apagado.');
- }catch(e){alert('Não foi possível apagar: '+e.message)}
+  if(r.__table!=='supervision_referrals')return alert('Este tipo de registro requer verificação específica antes da remoção.');
+  const patient=S.rows.find(x=>String(x.id)===String(r.surgery_id));
+  const update={status:'respondido',resolution:'Cancelado administrativamente por registro apresentado como Paciente não encontrado. Não houve tratativa clínica. Cadastro do paciente preservado.',return_stage:patient?.stage||r.origin_stage||'fila',resolved_at:new Date().toISOString(),resolved_by:uid};
+  const result=await api('/rest/v1/supervision_referrals?id=eq.'+encodeURIComponent(r.id)+'&status=eq.aguardando',{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify(update)});
+  if(!Array.isArray(result)||result.length!==1)throw Error('O banco não confirmou o cancelamento.');
+  await load();renderCurrent();alert('Encaminhamento retirado dos pendentes. Cadastro preservado.');
+ }catch(e){alert('Não foi possível retirar o encaminhamento: '+e.message)}
 };
 async function guard(id){
  if(!loaded){await fetchPending();if(!loaded){alert('Não foi possível verificar a exclusividade entre as etapas. Tente novamente após sincronizar.');return false}}
