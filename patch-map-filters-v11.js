@@ -5,7 +5,7 @@ function mapFilterOptionsV11(rows,key){
   return [...new Set(rows.map(x=>String(x[key]||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
 }
 function mapFilteredRowsV11(){
-  const all=stageRows('mapa_cirurgico');
+  const all=(S.rows||[]).filter(x=>x.stage==='mapa_cirurgico'&&x.active!==false);
   const f=S.mapFilters||{};
   return all.filter(x=>{
     const dt=String(x.surgery_date||'');
@@ -29,7 +29,7 @@ window.printMapV11=function(){window.print();};
 
 function roomCardV11(n,rows){
   let rr=rows.filter(x=>String(x.map_room||'').replace(/\D/g,'')==String(n));
-  return `<div class="room"><h3>🚪 Sala 0${n}</h3><div class="body">${rr.length?rr.slice(0,8).map(x=>`<div style="margin-bottom:7px"><b>${esc(x.patient_name)}</b><br><span class="sub">${esc(x.surgeon||'')} • ${esc(x.specialty||'')} • ${esc(x.surgery_date||'')}</span></div>`).join(''):'Nenhum agendamento com os filtros selecionados'}</div></div>`;
+  return `<div class="room"><h3>🚪 Sala 0${n}</h3><div class="body">${rr.length?rr.map(x=>`<div style="margin-bottom:7px"><b>${esc(x.patient_name)}</b><br><span class="sub">${esc(x.surgeon||'')} • ${esc(x.specialty||'')} • ${esc(x.surgery_date||'')}</span></div>`).join(''):'Nenhum agendamento com os filtros selecionados'}</div></div>`;
 }
 function roomTableV11(n,rows){
   let rr=rows.filter(x=>String(x.map_room||'').replace(/\D/g,'')==String(n));
@@ -37,7 +37,7 @@ function roomTableV11(n,rows){
 }
 
 window.renderMap=function(){
-  const all=stageRows('mapa_cirurgico');
+  const all=(S.rows||[]).filter(x=>x.stage==='mapa_cirurgico'&&x.active!==false);
   const rows=mapFilteredRowsV11();
   const doctors=mapFilterOptionsV11(all,'surgeon');
   const specialties=mapFilterOptionsV11(all,'specialty');
