@@ -133,4 +133,4 @@ f.addEventListener('load',()=>{try{const d=f.contentDocument;const inject=()=>{i
   }catch(e){console.error('Falha ao abrir histórico do mapa cirúrgico',e)}
  });
 })();
-</script></body></html>
+</script><script>(function(){const frame=document.getElementById('appFrame');if(!frame)return;frame.addEventListener('load',()=>{try{const d=frame.contentDocument;const install=()=>{if(d.querySelector('script[data-hsj-map-day]'))return;const s=d.createElement('script');s.dataset.hsjMapDay='1';s.src='/patch-historico-mapa-direto-20261030.js?v=20261030-01';d.head.appendChild(s)};const target='patch-historico-mapa-20261030.js';const hook=n=>{if(n?.tagName!=='SCRIPT'||!n.src?.includes(target))return false;n.addEventListener('load',install,{once:true});return true};if([...d.scripts].some(hook))return;const obs=new MutationObserver(rs=>{for(const r of rs)for(const n of r.addedNodes)if(hook(n)){obs.disconnect();return}});obs.observe(d.head,{childList:true})}catch(e){console.error(e)}})})();</script></body></html>
