@@ -27,16 +27,8 @@
   if(!confirm('Confirmar devolução de '+x.patient_name+' para '+(stages.find(v=>v[0]===dest)?.[1]||dest)+'?'))return;
   saving=true;
   try{
-   const fresh=await api('/rest/v1/surgeries?id=eq.'+encodeURIComponent(id)+'&select=id,stage,updated_at');
-   if(!Array.isArray(fresh)||fresh.length!==1||fresh[0].stage!=='concluida')throw Error('Etapa modificada em outro computador.');
-   const pending=await Promise.all([
-    api('/rest/v1/supervision_referrals?select=id&surgery_id=eq.'+encodeURIComponent(id)+'&status=eq.aguardando&limit=1'),
-    api('/rest/v1/administrative_referrals?select=id&surgery_id=eq.'+encodeURIComponent(id)+'&status=eq.aguardando&limit=1'),
-    api('/rest/v1/monitoring_claims_hsj?select=id&surgery_id=eq.'+encodeURIComponent(id)+'&status=eq.aguardando&limit=1')
-   ]);
-   if(pending.some(v=>v.length))throw Error('Paciente possui monitoramento pendente. Conclua a tratativa primeiro.');
-   const out=await api('/rest/v1/surgeries?id=eq.'+encodeURIComponent(id)+'&stage=eq.concluida&updated_at=eq.'+encodeURIComponent(fresh[0].updated_at),{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({stage:dest,updated_by:uid})});
-   if(!Array.isArray(out)||out.length!==1)throw Error('Não foi possível confirmar alteração da etapa.');
+   const result=await api('/rest/v1/rpc/hsj_devolver_fim_jornada',{method:'POST',body:JSON.stringify({p_surgery_id:id,p_destino:dest,p_motivo:reason,p_usuario:uid})});
+   if(result!==true)throw Error('O banco não confirmou a devolução.');
    document.getElementById('modal').innerHTML='';
    await load();renderCurrent();alert('Paciente devolvido para '+(stages.find(v=>v[0]===dest)?.[1]||dest)+'. Motivo informado: '+reason);
   }catch(e){alert('Devolução não concluída: '+(e?.message||e))}
