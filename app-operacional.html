@@ -80,4 +80,24 @@ f.addEventListener('load',()=>{try{const d=f.contentDocument;const inject=()=>{i
   }catch(err){console.error('Erro ao instalar filtros dos monitoramentos',err)}
  });
 })();
+</script><script>
+(function(){
+ const frame=document.getElementById('appFrame');if(!frame)return;
+ frame.addEventListener('load',()=>{
+  try{
+   const doc=frame.contentDocument;
+   const install=()=>{
+    if(doc.querySelector('script[data-hsj-cross-monitor-20261030]'))return;
+    const s=doc.createElement('script');s.dataset.hsjCrossMonitor20261030='1';
+    s.src='/patch-transferencia-entre-monitoramentos-20261030.js?v=20261030-01';
+    doc.head.appendChild(s);
+   };
+   const target='patch-filtros-medico-especialidade-monitoramentos-20261030.js';
+   const connect=n=>{if(n?.tagName!=='SCRIPT'||!n.src?.includes(target))return false;n.addEventListener('load',install,{once:true});return true};
+   if([...doc.scripts].some(connect))return;
+   const obs=new MutationObserver(rs=>{for(const r of rs)for(const n of r.addedNodes)if(connect(n)){obs.disconnect();return}});
+   obs.observe(doc.head,{childList:true});
+  }catch(e){console.error('Falha ao instalar transferência de monitoramentos',e)}
+ });
+})();
 </script></body></html>
