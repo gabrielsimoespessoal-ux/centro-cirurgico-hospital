@@ -13,7 +13,7 @@ async function fetchAll(){
  }
  throw Error('Limite de registros excedido');
 }
-const valid=x=>x.surgery_date&&x.stage!=='fila'&&x.stage!=='consulta_preop'&&x.stage!=='exames'&&x.stage!=='programacao'||x.stage==='mapa_cirurgico'||x.stage==='concluida';
+const valid=x=>Boolean(x.surgery_date&&(x.map_room||['mapa_cirurgico','concluida','pos_operatorio'].includes(x.stage)||x.patient_status==='REALIZADA'));
 const matches=x=>valid(x)&&(!state.from||x.surgery_date>=state.from)&&(!state.to||x.surgery_date<=state.to)&&(!state.doctor||x.surgeon===state.doctor)&&(!state.specialty||x.specialty===state.specialty)&&(!state.status||String(x.patient_status||'NÃO INFORMADA')===state.status);
 const choices=(vals,v,all)=>'<option value="">'+all+'</option>'+[...new Set(vals.filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR')).map(x=>'<option value="'+escH(x)+'" '+(x===v?'selected':'')+'>'+escH(x)+'</option>').join('');
 function render(){
