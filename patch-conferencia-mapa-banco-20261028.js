@@ -14,6 +14,27 @@ function notice(){
  panel.appendChild(msg);
  const button=document.createElement('button');button.className='btn small';button.style.marginLeft='12px';button.textContent='Conferir mapa agora';button.disabled=running;button.onclick=()=>window.hsjConferirMapa(true);
  panel.appendChild(button);
+ // Acesso direto ao cadastro para pacientes que não aparecem nas salas.
+ const direct=document.createElement('div');direct.style.cssText='margin-top:10px;padding:9px;border:1px solid #c7d7ef;border-radius:7px;background:#fff';
+ const title=document.createElement('div');title.style.cssText='font-size:12px;font-weight:700;margin-bottom:6px';title.textContent='🔎 Localizar e editar paciente do Mapa Cirúrgico';direct.appendChild(title);
+ const input=document.createElement('input');input.type='search';input.placeholder='Digite nome, CPF ou IDS do paciente';input.style.cssText='width:min(520px,100%);padding:8px;border:1px solid #bed0e6;border-radius:6px';
+ input.value=window.__hsjMapaConsultaDireta||document.getElementById('hsjBuscaInput20261015')?.value||'';
+ const results=document.createElement('div');results.style.marginTop='7px';
+ function populate(){
+  const q=input.value.trim().toLocaleLowerCase('pt-BR');window.__hsjMapaConsultaDireta=input.value;results.replaceChildren();
+  if(q.length<3)return;
+  const matches=(S.rows||[]).filter(x=>x.stage==='mapa_cirurgico'&&x.active!==false&&[x.patient_name,x.cpf,x.ids].some(v=>String(v||'').toLocaleLowerCase('pt-BR').includes(q))).slice(0,20);
+  if(!matches.length){results.textContent='Nenhum paciente localizado no Mapa Cirúrgico com esse termo.';return}
+  for(const row of matches){
+   const item=document.createElement('div');item.style.cssText='padding:7px 0;border-top:1px solid #edf1f7;display:flex;align-items:center;gap:8px;flex-wrap:wrap';
+   const name=document.createElement('strong');name.style.fontSize='12px';name.textContent=row.patient_name+' — '+(row.surgery_date||'Sem data')+(row.map_room?' — '+row.map_room:' — Sem sala definida');item.appendChild(name);
+   for(const [label,action] of [['✏ Editar cadastro',()=>window.editPatient?.(row.id)],['🏥 Editar dados do mapa',()=>window.editMapPatient?.(row.id)]]){
+    const b=document.createElement('button');b.type='button';b.className='btn small';b.textContent=label;b.onclick=action;item.appendChild(b);
+   }
+   results.appendChild(item);
+  }
+ }
+ input.addEventListener('input',populate);direct.appendChild(input);direct.appendChild(results);panel.appendChild(direct);populate();
  if(!running&&!error&&undated){const warn=document.createElement('div');warn.style.marginTop='6px';warn.textContent='Atenção: cadastros sem data de cirurgia podem não aparecer quando há filtro por data. Corrija a data no cadastro original.';panel.appendChild(warn)}
 }
 window.renderMap=function(){const result=originalRender.apply(this,arguments);notice();if(Date.now()-last>60000&&!running)queueMicrotask(()=>window.hsjConferirMapa(false));return result};
