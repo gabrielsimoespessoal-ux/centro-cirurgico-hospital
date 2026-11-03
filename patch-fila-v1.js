@@ -7,7 +7,24 @@ const requestStatuses=['ATIVO','INATIVO','EM PREPARAÇÃO','PROCESSO FINALIZADO'
 const seededProcedures=['COLECISTECTOMIA','HERNIOPLASTIA INGUINAL','HERNIOPLASTIA INGUINAL (BILATERAL)','HERNIOPLASTIA UMBILICAL','HISTERECTOMIA C/ ANEXECTOMIA','HISTERECTOMIA TOTAL','NEFROLITOTRIPSIA PERCUTÂNEA','PAROTIDECTOMIA PARCIAL OU SUBTOTAL','POSTECTOMIA','RESSECÇÃO ENDOSCÓPICA DE PRÓSTATA','RETIRADA DE FIO OU PINO INTRA-ÓSSEO','TRATAMENTO CIRÚRGICO DE FRATURA DA CLAVÍCULA','TRATAMENTO CIRÚRGICO DE FRATURA DIAFISÁRIA ÚNICA DO RÁDIO','TRATAMENTO CIRÚRGICO DE PÉ TORTO CONGÊNITO','URETERORRENOLITOTRIPSIA FLEXÍVEL A LASER','VASECTOMIA'];
 const seededDoctors=['KATARINE CAETANO','WESLLEY SANTIAGO','LUCAS MEIRA','JOÃO MUSSY','ANDRÉ MELO','CARLOS KAKUDA'];
 function uniq(arr){return [...new Set(arr.map(x=>String(x||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'))}
-function smartValues(key,seed){return uniq([...(seed||[]),...S.rows.map(r=>r[key])])}
+function hsjSpecialtiesLocal(){try{return JSON.parse(localStorage.getItem('hsj_especialidades_fila_v1')||'[]')}catch(_){return []}}
+function smartValues(key,seed){return uniq([...(seed||[]),...(key==='specialty'?hsjSpecialtiesLocal():[]),...S.rows.map(r=>r[key])])}
+function hsjAdicionarEspecialidadeFila(){
+ const input=document.getElementById('hsj_nova_especialidade');
+ const destino=document.getElementById('f_specialty');
+ if(!input||!destino)return;
+ const valor=String(input.value||'').trim().replace(/\\s+/g,' ').toUpperCase();
+ if(!valor){alert('Digite o nome da nova especialidade médica.');input.focus();return;}
+ if(valor.length>100){alert('O nome deve conter até 100 caracteres.');return;}
+ const catalogo=uniq([...hsjSpecialtiesLocal(),valor]);
+ try{localStorage.setItem('hsj_especialidades_fila_v1',JSON.stringify(catalogo))}catch(_){}
+ const lista=document.getElementById('list_specialty');
+ if(lista)lista.innerHTML=smartValues('specialty',specialties).map(v=>'<option value="'+esc(v)+'"></option>').join('');
+ destino.value=valor;
+ input.value='';
+ destino.dispatchEvent(new Event('input',{bubbles:true}));
+}
+window.hsjAdicionarEspecialidadeFila=hsjAdicionarEspecialidadeFila;
 function opt(v,current){return `<option value="${esc(v)}" ${String(v)===String(current||'')?'selected':''}>${esc(v)}</option>`}
 function selectHtml(label,id,current,items,cls=''){return `<div class="field ${cls}"><label>${label}</label><select id="f_${id}"><option value=""></option>${items.map(v=>opt(v,current)).join('')}</select></div>`}
 function smartHtml(label,id,current,items,cls=''){
@@ -21,7 +38,7 @@ editPatient=function(id=''){
  ${field('NOME COMPLETO *','patient_name',x.patient_name)}${field('IDS','ids',x.ids)}${field('CPF','cpf',x.cpf)}
  ${field('CONTATO / WHATSAPP','phone',x.phone)}${field('DATA DE SOLICITAÇÃO DO AIH','aih_request_date',x.aih_request_date,'date')}${field('DATA CADASTRO IDS','ids_register_date',x.ids_register_date,'date')}
  ${smartHtml('PROCEDIMENTO CIRÚRGICO *','procedure_name',x.procedure_name,procedures,'span2')}${field('CÓDIGO DO PROCEDIMENTO','sigtap_code',x.sigtap_code)}
- ${selectHtml('TIPO DE SOLICITAÇÃO','request_type',x.request_type,reqTypes)}${smartHtml('ESPECIALIDADE','specialty',x.specialty,smartValues('specialty',specialties))}${smartHtml('MÉDICO CIRURGIÃO','surgeon',x.surgeon,doctors)}
+ ${selectHtml('TIPO DE SOLICITAÇÃO','request_type',x.request_type,reqTypes)}${smartHtml('ESPECIALIDADE','specialty',x.specialty,smartValues('specialty',specialties))}<div class="field"><label>NOVA ESPECIALIDADE MÉDICA</label><input id="hsj_nova_especialidade" type="text" maxlength="100" placeholder="Digite uma nova especialidade" onkeydown="if(event.key==='Enter'){event.preventDefault();hsjAdicionarEspecialidadeFila()}"><button type="button" class="btn small" onclick="hsjAdicionarEspecialidadeFila()">+ Adicionar especialidade</button><div class="sub">A nova especialidade será selecionada no cadastro e salva com o paciente ao gravar as alterações.</div></div>${smartHtml('MÉDICO CIRURGIÃO','surgeon',x.surgeon,doctors)}
  ${field('DATA DE NASCIMENTO (DN)','birth_date',x.birth_date,'date')}${field('DATA DA AUTORIZAÇÃO','authorization_date',x.authorization_date,'date')}${selectHtml('MÊS DA AUTORIZAÇÃO','authorization_month',x.authorization_month,months)}
  ${field('DATA DA PROGRAMAÇÃO','programming_date',x.programming_date,'date')}${selectHtml('SOLICITAR REVALIDAÇÃO','revalidation_status',x.revalidation_status||'',revalid)}${selectField('SITUAÇÃO DO PACIENTE','patient_status',x.patient_status,patientStatuses)}
  ${selectHtml('SITUAÇÃO DA SOLICITAÇÃO','request_status',x.request_status,requestStatuses)}${field('DATA DA REMARCAÇÃO','reschedule_date',x.reschedule_date,'date')}${field('DATA DA CIRURGIA','surgery_date',x.surgery_date,'date')}
