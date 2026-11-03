@@ -13,7 +13,7 @@ function hsjAdicionarEspecialidadeFila(){
  const input=document.getElementById('hsj_nova_especialidade');
  const destino=document.getElementById('f_specialty');
  if(!input||!destino)return;
- const valor=String(input.value||'').trim().replace(/\\s+/g,' ').toUpperCase();
+ const valor=String(input.value||'').trim().replace(/\s+/g,' ').toUpperCase();
  if(!valor){alert('Digite o nome da nova especialidade médica.');input.focus();return;}
  if(valor.length>100){alert('O nome deve conter até 100 caracteres.');return;}
  const catalogo=uniq([...hsjSpecialtiesLocal(),valor]);
