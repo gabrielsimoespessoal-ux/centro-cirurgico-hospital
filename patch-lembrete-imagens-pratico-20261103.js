@@ -15,17 +15,17 @@
   const item=arquivos[tipo];if(!item)throw Error('Orientação não encontrada.');
   const resposta=await fetch(item.url,{cache:'force-cache'});
   if(!resposta.ok)throw Error('Não foi possível abrir a imagem de orientação.');
-  const svg=await resposta.text(),url=URL.createObjectURL(new Blob([svg],{type:'image/svg+xml'})),img=new Image();
+  const svg=await resposta.text(),url=window.URL.createObjectURL(new Blob([svg],{type:'image/svg+xml'})),img=new Image();
   try{
    await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=()=>reject(Error('Erro ao converter a imagem.'));img.src=url;});
    const canvas=document.createElement('canvas');canvas.width=img.naturalWidth;canvas.height=img.naturalHeight;
    canvas.getContext('2d').drawImage(img,0,0);
    return await new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(Error('Conversão PNG falhou.')),'image/png'));
-  }finally{URL.revokeObjectURL(url)}
+  }finally{window.URL.revokeObjectURL(url)}
  }
  function baixar(blob,nome){
-  const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=nome;
-  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),20000);
+  const url=window.URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=nome;
+  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>window.URL.revokeObjectURL(url),20000);
  }
  async function acao(tipo,metodo,status){
   try{
