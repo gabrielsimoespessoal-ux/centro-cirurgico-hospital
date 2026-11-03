@@ -24,19 +24,19 @@ async function pngBlob(which){
  if(!response.ok)throw Error('Arquivo de orientação indisponível: '+response.status);
  const svg=await response.text();
  const image=new Image();
- const src=URL.createObjectURL(new Blob([svg],{type:'image/svg+xml;charset=utf-8'}));
+ const src=window.URL.createObjectURL(new Blob([svg],{type:'image/svg+xml;charset=utf-8'}));
  try{
   await new Promise((resolve,reject)=>{image.onload=resolve;image.onerror=()=>reject(new Error('Falha ao renderizar imagem.'));image.src=src;});
   const canvas=document.createElement('canvas');
   canvas.width=image.naturalWidth;canvas.height=image.naturalHeight;
   canvas.getContext('2d').drawImage(image,0,0);
   return await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('Não foi possível gerar PNG.')),'image/png'));
- }finally{URL.revokeObjectURL(src);}
+ }finally{window.URL.revokeObjectURL(src);}
 }
 function download(blob,name){
- const url=URL.createObjectURL(blob),a=document.createElement('a');
+ const url=window.URL.createObjectURL(blob),a=document.createElement('a');
  a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();
- setTimeout(()=>URL.revokeObjectURL(url),10000);
+ setTimeout(()=>window.URL.revokeObjectURL(url),10000);
 }
 window.hsjBaixarOrientacaoWhatsApp=async which=>{
  try{download(await pngBlob(which),ASSETS[which].name)}
