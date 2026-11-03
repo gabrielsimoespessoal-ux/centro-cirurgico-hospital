@@ -143,7 +143,7 @@ f.addEventListener('load',()=>{try{const d=f.contentDocument;const inject=()=>{i
     if(doc.querySelector('script[data-hsj-orientacoes-20261103]'))return;
     const script=doc.createElement('script');
     script.dataset.hsjOrientacoes20261103='1';
-    script.src='/patch-orientacoes-whatsapp-20261103.js?v=20261103-02';
+    script.src='/patch-orientacoes-whatsapp-20261103.js?v=20261103-erro-url-corrigido02';
     doc.head.appendChild(script);
    };
    const target='patch-agendamento-cirurgia-whatsapp-20261023.js';
@@ -211,7 +211,7 @@ f.addEventListener('load',()=>{try{const d=f.contentDocument;const inject=()=>{i
     initialized=true;
     const script=d.createElement('script');
     script.dataset.hsjLembretePratico='1';
-    script.src='/patch-lembrete-imagens-pratico-20261103.js?v=20261103-01';
+    script.src='/patch-lembrete-imagens-pratico-20261103.js?v=20261103-erro-url-corrigido02';
     script.onerror=()=>console.error('Não foi possível carregar o lembrete de imagens');
     d.head.appendChild(script);
    };
