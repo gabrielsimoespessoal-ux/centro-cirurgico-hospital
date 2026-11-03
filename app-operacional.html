@@ -197,4 +197,43 @@ f.addEventListener('load',()=>{try{const d=f.contentDocument;const inject=()=>{i
     }catch(e){console.error('Falha na integração da mensagem com imagens:',e);}
   });
 })();
+</script><script>
+(function(){
+ const frame=document.getElementById('appFrame');
+ if(!frame)return;
+ frame.addEventListener('load',function(){
+  try{
+   const d=frame.contentDocument;
+   if(!d)return;
+   let initialized=false;
+   const install=()=>{
+    if(initialized || d.querySelector('script[data-hsj-lembrete-pratico]'))return;
+    initialized=true;
+    const script=d.createElement('script');
+    script.dataset.hsjLembretePratico='1';
+    script.src='/patch-lembrete-imagens-pratico-20261103.js?v=20261103-01';
+    script.onerror=()=>console.error('Não foi possível carregar o lembrete de imagens');
+    d.head.appendChild(script);
+   };
+   const marker='patch-envio-completo-whatsapp-api-20261103.js';
+   const hook=node=>{
+    if(node?.tagName!=='SCRIPT'||!node.src?.includes(marker))return false;
+    node.addEventListener('load',install,{once:true});
+    return true;
+   };
+   const existing=[...d.querySelectorAll('script')].find(node=>node.src?.includes(marker));
+   if(existing){
+    if(d.defaultView?.__hsjEnvioCompletoApi20261103)install();
+    else hook(existing);
+   }else{
+    const observer=new MutationObserver(records=>{
+     for(const record of records)for(const node of record.addedNodes){
+      if(hook(node)){observer.disconnect();return}
+     }
+    });
+    observer.observe(d.head,{childList:true});
+   }
+  }catch(e){console.error('Erro ao habilitar orientações no Mapa Cirúrgico:',e)}
+ });
+})();
 </script></body></html>
