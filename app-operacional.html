@@ -163,4 +163,38 @@ f.addEventListener('load',()=>{try{const d=f.contentDocument;const inject=()=>{i
   }catch(error){console.error('Falha ao carregar orientações em imagem:',error);}
  });
 })();
+</script><script>
+(function(){
+  const frame=document.getElementById('appFrame');
+  if(!frame)return;
+  frame.addEventListener('load',function(){
+    try{
+      const d=frame.contentDocument;
+      if(!d)return;
+      const install=()=>{
+        if(d.querySelector('script[data-hsj-waba-20261103]'))return;
+        const script=d.createElement('script');
+        script.dataset.hsjWaba20261103='1';
+        script.src='/patch-envio-completo-whatsapp-api-20261103.js?v=20261103-04';
+        d.head.appendChild(script);
+      };
+      const marker='patch-lembrete-no-mapa-20261023.js';
+      let settled=false;
+      const watch=node=>{
+        if(!node||node.tagName!=='SCRIPT'||!node.src?.includes(marker))return false;
+        if(!settled){settled=true;node.addEventListener('load',()=>setTimeout(install,0),{once:true});}
+        return true;
+      };
+      const existing=[...d.querySelectorAll('script')].find(watch);
+      if(existing && d.defaultView?.hsjMapReminderV12)setTimeout(install,0);
+      if(!settled){
+        const observer=new MutationObserver(list=>{
+          for(const record of list)for(const node of record.addedNodes)
+            if(watch(node)){observer.disconnect();return;}
+        });
+        observer.observe(d.head,{childList:true});
+      }
+    }catch(e){console.error('Falha na integração da mensagem com imagens:',e);}
+  });
+})();
 </script></body></html>
