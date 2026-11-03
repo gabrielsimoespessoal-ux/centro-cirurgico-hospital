@@ -103,8 +103,8 @@
   document.body.appendChild(overlay);
   overlay.querySelector('#hsj-fechar-lembrete').onclick=fechar;
   overlay.querySelector('#hsj-abrir-whatsapp').onclick=()=>{
-   const win=window.open('https://wa.me/'+telefone+'?text='+encodeURIComponent(mensagem),'_blank','noopener,noreferrer');
-   overlay.querySelector('#hsj-status-orientacoes').textContent=win?'Conversa aberta. Envie a mensagem e anexe as imagens antes de concluir.':'Se a conversa não abriu, permita pop-ups e clique novamente. O envio não foi confirmado.';
+   window.open('https://wa.me/'+telefone+'?text='+encodeURIComponent(mensagem),'_blank','noopener,noreferrer');
+   overlay.querySelector('#hsj-status-orientacoes').textContent='Solicitada a abertura do WhatsApp. Se não abrir, permita pop-ups. Envie a mensagem e depois anexe as imagens; o aplicativo não confirma o envio.';
   };
   const status=overlay.querySelector('#hsj-status-orientacoes');
   overlay.querySelectorAll('[data-copy]').forEach(b=>b.onclick=()=>acao(b.dataset.copy,'copiar',status));
