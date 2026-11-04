@@ -5,12 +5,13 @@ window.__hsjMapFilterRepairNov2026=true;
 const original=window.renderMap;
 if(typeof original!=='function')return;
 function escHtml(v){return String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}
+const normalized=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().trim();
 function selectedRows(){
  const f=S.mapFilters||{};
  return (S.rows||[]).filter(x=>{
   if(x.active===false||x.stage!=='mapa_cirurgico'||x.patient_status==='REALIZADA')return false;
   const date=String(x.surgery_date||'').slice(0,10);
-  return (!f.doctor||x.surgeon===f.doctor)&&(!f.specialty||x.specialty===f.specialty)
+  return (!f.doctor||normalized(x.surgeon)===normalized(f.doctor))&&(!f.specialty||normalized(x.specialty)===normalized(f.specialty))
     &&(!f.from||date>=f.from)&&(!f.to||date<=f.to);
  });
 }
@@ -31,7 +32,7 @@ window.renderMap=function(){
  controls.style.cssText='margin:12px 0;padding:12px;background:#f4f9ff;border:1px solid #bfd5eb;border-radius:9px';
  const header=document.createElement('div');
  header.style.cssText='display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:8px';
- const title=document.createElement('strong');title.textContent='Agendamentos localizados no período: '+rows.length;
+ const title=document.createElement('strong');title.textContent='Registros localizados no período (inclusive suspensos): '+rows.length;
  const refresh=document.createElement('button');refresh.type='button';refresh.className='btn small';
  refresh.textContent='↻ Conferir pacientes no banco';
  refresh.onclick=()=>window.hsjSyncMapaAgora?.();
@@ -47,11 +48,12 @@ window.renderMap=function(){
    line.style.cssText='display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#fff;border:1px solid #dce8f3;border-radius:7px;padding:8px';
    const description=document.createElement('div');description.style.cssText='flex:1;min-width:230px;font-size:12px';
    const d=String(patient.surgery_date||'').split('-').reverse().join('/');
-   description.innerHTML='<b>'+escHtml(patient.patient_name)+'</b><div>'+escHtml(d)+' · '+escHtml(patient.map_room||'Sem sala')+' · '+escHtml(patient.surgeon||'Médico não informado')+'</div>';
+   description.innerHTML='<b>'+escHtml(patient.patient_name)+'</b> '+(normalized(patient.patient_status)==='SUSPENSA'?'<strong style="color:#a52c35">CIRURGIA SUSPENSA</strong>':'')+'<div>'+escHtml(d)+' · '+escHtml(patient.map_room||'Sem sala')+' · '+escHtml(patient.surgeon||'Médico não informado')+' · '+escHtml(patient.specialty||'Especialidade não informada')+'</div>';
    const edit=document.createElement('button');edit.type='button';edit.className='btn small';
    edit.textContent='Editar mapa';edit.onclick=()=>window.editMapPatient?.(patient.id);
    const reminder=document.createElement('button');reminder.type='button';reminder.className='btn green small';
-   reminder.textContent='WhatsApp — lembrete + imagens';
+   reminder.textContent=normalized(patient.patient_status)==='SUSPENSA'?'Lembrete indisponível — cirurgia suspensa':'WhatsApp — lembrete + imagens';
+   if(normalized(patient.patient_status)==='SUSPENSA')reminder.disabled=true;
    reminder.onclick=()=>window.hsjMapReminderV12?.(patient.id);
    line.append(description,edit,reminder);list.appendChild(line);
   }
