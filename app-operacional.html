@@ -315,4 +315,33 @@ f.addEventListener('load',()=>{try{const d=f.contentDocument;const inject=()=>{i
   }catch(error){console.error('Erro ao carregar correção do lembrete:',error)}
  });
 })();
+</script><script>
+(function(){
+ const frame=document.getElementById('appFrame');if(!frame)return;
+ frame.addEventListener('load',()=>{
+  const doc=frame.contentDocument;if(!doc)return;
+  const marker='patch-lembrete-corrigir-data-hora-20261104.js';
+  const install=()=>{
+   if(doc.querySelector('script[data-hsj-map-filter-repair]'))return;
+   const s=doc.createElement('script');
+   s.dataset.hsjMapFilterRepair='1';
+   s.src='/patch-mapa-isolar-filtros-acoes-20261104.js?v=20261104-01';
+   doc.head.appendChild(s);
+  };
+  const existing=[...doc.scripts].find(s=>s.src?.includes(marker));
+  if(existing){
+   existing.addEventListener('load',install,{once:true});
+   if(doc.defaultView?.__hsjLembreteCorrigirHorario20261104)install();
+   return;
+  }
+  const observer=new MutationObserver(records=>{
+   for(const record of records)for(const node of record.addedNodes){
+    if(node?.tagName==='SCRIPT'&&node.src?.includes(marker)){
+     observer.disconnect();node.addEventListener('load',install,{once:true});return;
+    }
+   }
+  });
+  observer.observe(doc.head,{childList:true});
+ });
+})();
 </script></body></html>
