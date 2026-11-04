@@ -38,7 +38,7 @@ window.hsjSaveMapExtraV2=async function(id){
  const by=document.getElementById('f_map_responsible')?.value.trim()||'';
  const input=document.getElementById('f_map_surgery_time');
  if(!date){alert('Informe a data da cirurgia.');document.getElementById('f_surgery_date')?.focus();return}
- if(!/^([01]\\d|2[0-3]):[0-5]\\d$/.test(time)){alert('Informe o horário confirmado do procedimento.');input?.focus();return}
+ if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)){alert('Informe o horário confirmado do procedimento.');input?.focus();return}
  const button=document.querySelector('#modal .mf button.primary');
  if(button)button.disabled=true;
  let previous;
@@ -46,8 +46,6 @@ window.hsjSaveMapExtraV2=async function(id){
  catch(e){if(button)button.disabled=false;alert('Não foi possível carregar os dados anteriores do agendamento. Tente novamente para evitar perda de informações.');return}
  const responsible=by||String(previous.scheduled_by_name||'').trim();
  if(!responsible){if(button)button.disabled=false;alert('Informe o nome do responsável pelo agendamento para salvar data e horário.');document.getElementById('f_map_responsible')?.focus();return}
- const oldDate=String(previous.scheduled_date||'').slice(0,10);
- const oldTime=String(previous.scheduled_time||'').slice(0,5);
  try{
   await previousSave.apply(this,arguments);
   // A função original fecha o formulário somente quando a gravação do Mapa foi confirmada.
