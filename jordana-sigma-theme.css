@@ -102,3 +102,38 @@
  #shell #content table.table tr{break-inside:avoid!important}
  #shell #content .section-head button[onclick*="print"]{display:none!important}
 }
+
+
+/* Identidade única no cabeçalho; menu lateral sem logomarca duplicada. */
+@media screen {
+ #shell>.topbar{padding-left:14px!important;padding-right:16px!important}
+ #shell>.topbar .brand{
+  display:flex!important;align-items:center!important;gap:0!important;
+  flex:0 1 300px!important;min-width:170px!important;
+  height:calc(var(--jordana-top-h) - 5px)!important;
+ }
+ #shell>.topbar .brand::before{
+  content:"";display:block;flex:0 0 auto;width:min(285px,30vw);height:100%;
+  background:url('/jordana-sigma-logo.svg?v=20261104-01') left center / contain no-repeat;
+ }
+ #shell>.topbar .brand>.brand-icon,
+ #shell>.topbar .brand>div:not(.brand-icon){display:none!important}
+ #shell #tabs.tabs::before{content:none!important;display:none!important}
+ #shell #tabs.tabs{
+  padding-top:10px!important;padding-bottom:10px!important;
+  gap:2px!important;scrollbar-width:none!important;-ms-overflow-style:none!important;
+ }
+ #shell #tabs.tabs::-webkit-scrollbar{display:none!important}
+ #shell #tabs.tabs .tab{
+  min-height:34px!important;padding:7px 10px!important;
+  font-size:12px!important;line-height:1.15!important;
+ }
+ #shell #tabs.tabs .tab::before{font-size:12px!important;width:15px!important;flex-basis:15px!important}
+}
+@media screen and (max-width:700px){
+ #shell>.topbar{padding-left:8px!important}
+ #shell>.topbar .brand{flex-basis:165px!important;min-width:120px!important}
+ #shell>.topbar .brand::before{width:160px!important;max-width:40vw!important}
+ #shell #tabs.tabs{padding-top:7px!important}
+ #shell #tabs.tabs .tab{min-height:30px!important;padding:6px 4px!important;font-size:10.5px!important}
+}
