@@ -236,4 +236,37 @@ f.addEventListener('load',()=>{try{const d=f.contentDocument;const inject=()=>{i
   }catch(e){console.error('Erro ao habilitar orientações no Mapa Cirúrgico:',e)}
  });
 })();
+</script><script>
+(function(){
+ const frame=document.getElementById('appFrame');if(!frame)return;
+ frame.addEventListener('load',()=>{
+  try{
+   const doc=frame.contentDocument;if(!doc)return;
+   const marker='patch-lembrete-imagens-pratico-20261103.js';
+   let added=false;
+   const install=()=>{
+    if(added||doc.querySelector('script[data-hsj-map-time-20261104]'))return;
+    added=true;
+    const script=doc.createElement('script');
+    script.dataset.hsjMapTime20261104='1';
+    script.src='/patch-horario-agendamento-mapa-20261104.js?v=20261104-02';
+    doc.head.appendChild(script);
+   };
+   const observe=node=>{
+    if(node?.tagName!=='SCRIPT'||!node.src?.includes(marker))return false;
+    node.addEventListener('load',install,{once:true});
+    if(doc.defaultView?.__hsjLembreteImagensManual20261103)install();
+    return true;
+   };
+   const found=[...doc.scripts].find(observe);
+   if(found)return;
+   const observer=new MutationObserver(items=>{
+    for(const item of items)for(const node of item.addedNodes){
+     if(observe(node)){observer.disconnect();return}
+    }
+   });
+   observer.observe(doc.head,{childList:true});
+  }catch(error){console.error('Não foi possível instalar o horário do agendamento no Mapa:',error)}
+ });
+})();
 </script></body></html>
