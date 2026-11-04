@@ -175,5 +175,4 @@
  body:has(#content .map-print-v11) #shell #content .map-print-v11>.tablewrap{
   overflow:visible!important;
  }
- @page{size:A4 landscape;margin:11mm}
 }
