@@ -269,4 +269,23 @@ f.addEventListener('load',()=>{try{const d=f.contentDocument;const inject=()=>{i
   }catch(error){console.error('Não foi possível instalar o horário do agendamento no Mapa:',error)}
  });
 })();
+</script><script>
+(function(){
+ const frame=document.getElementById('appFrame');
+ if(!frame)return;
+ frame.addEventListener('load',()=>{
+  const doc=frame.contentDocument;if(!doc)return;
+  const marker='patch-horario-agendamento-mapa-20261104.js';
+  const install=()=>{
+   if(doc.querySelector('script[data-hsj-map-sync-20261104]'))return;
+   const s=doc.createElement('script');s.dataset.hsjMapSync20261104='1';
+   s.src='/patch-sincronizacao-mapa-20261104.js?v=20261104-01';
+   doc.head.appendChild(s);
+  };
+  const found=[...doc.scripts].find(s=>s.src?.includes(marker));
+  if(found){found.addEventListener('load',install,{once:true});if(doc.defaultView?.__hsjMapaDataHora20261104)install();return}
+  const o=new MutationObserver(rs=>{for(const r of rs)for(const n of r.addedNodes)if(n?.tagName==='SCRIPT'&&n.src?.includes(marker)){o.disconnect();n.addEventListener('load',install,{once:true});return}});
+  o.observe(doc.head,{childList:true});
+ });
+})();
 </script></body></html>
