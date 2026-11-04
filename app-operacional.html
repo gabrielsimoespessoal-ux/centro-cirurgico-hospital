@@ -288,4 +288,31 @@ f.addEventListener('load',()=>{try{const d=f.contentDocument;const inject=()=>{i
   o.observe(doc.head,{childList:true});
  });
 })();
+</script><script>
+(function(){
+ const frame=document.getElementById('appFrame');if(!frame)return;
+ frame.addEventListener('load',()=>{
+  try{
+   const doc=frame.contentDocument;if(!doc)return;
+   const marker='patch-sincronizacao-mapa-20261104.js';
+   const inject=()=>{
+    if(doc.querySelector('script[data-hsj-reminder-fix-20261104]'))return;
+    const s=doc.createElement('script');s.dataset.hsjReminderFix20261104='1';
+    s.src='/patch-lembrete-corrigir-data-hora-20261104.js?v=20261104-01';
+    s.onerror=()=>console.error('Falha ao ativar correção de data e horário do lembrete');
+    doc.head.appendChild(s);
+   };
+   const found=[...doc.scripts].find(s=>s.src?.includes(marker));
+   if(found){found.addEventListener('load',inject,{once:true});if(doc.defaultView?.__hsjMapaRefresh20261104)inject();return}
+   const obs=new MutationObserver(items=>{
+    for(const item of items)for(const node of item.addedNodes){
+     if(node?.tagName==='SCRIPT'&&node.src?.includes(marker)){
+      obs.disconnect();node.addEventListener('load',inject,{once:true});return;
+     }
+    }
+   });
+   obs.observe(doc.head,{childList:true});
+  }catch(error){console.error('Erro ao carregar correção do lembrete:',error)}
+ });
+})();
 </script></body></html>
