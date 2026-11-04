@@ -137,3 +137,43 @@
  #shell #tabs.tabs{padding-top:7px!important}
  #shell #tabs.tabs .tab{min-height:30px!important;padding:6px 4px!important;font-size:10.5px!important}
 }
+
+/* Mapa Cirúrgico: impressão exclusiva da tabela filtrada e dos 4 KPIs.
+   Não altera o layout na tela nem a impressão das demais abas. */
+@media print{
+ body:has(#content .map-print-v11) #shell>.topbar,
+ body:has(#content .map-print-v11) #shell .filterbar,
+ body:has(#content .map-print-v11) #shell #tabs,
+ body:has(#content .map-print-v11) #shell .wrap>:not(#content),
+ body:has(#content .map-print-v11) #shell #content>:not(.map-print-v11),
+ body:has(#content .map-print-v11) #shell #content .map-print-v11>.notice,
+ body:has(#content .map-print-v11) #shell #content .map-print-v11>#hsj-map-actions-repair,
+ body:has(#content .map-print-v11) #shell #content .map-print-v11>#hsj-map-sync-bar,
+ body:has(#content .map-print-v11) #shell #content .map-print-v11>.tablewrap ~ .tablewrap,
+ body:has(#content .map-print-v11) #shell #content .map-print-v11>.tablewrap ~ div:not(.cards),
+ body:has(#content .map-print-v11) #shell #content .map-print-v11 .section-head button,
+ body:has(#content .map-print-v11) #shell #content .map-print-v11 button{
+  display:none!important;
+ }
+ body:has(#content .map-print-v11) #shell,
+ body:has(#content .map-print-v11) #shell .wrap,
+ body:has(#content .map-print-v11) #shell #content,
+ body:has(#content .map-print-v11) #shell #content .map-print-v11{
+  margin:0!important;padding:0!important;width:100%!important;max-width:none!important;
+  position:static!important;overflow:visible!important;box-shadow:none!important;
+ }
+ body:has(#content .map-print-v11) #shell #content .map-print-v11>.cards{
+  display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  gap:7px!important;margin:10px 0 14px!important;break-inside:avoid!important;
+ }
+ body:has(#content .map-print-v11) #shell #content .map-print-v11>.cards .kpi{
+  min-width:0!important;padding:9px!important;break-inside:avoid!important;
+ }
+ body:has(#content .map-print-v11) #shell #content .map-print-v11>.cards .kpi .label{
+  font-size:10px!important;white-space:normal!important;
+ }
+ body:has(#content .map-print-v11) #shell #content .map-print-v11>.tablewrap{
+  overflow:visible!important;
+ }
+ @page{size:A4 landscape;margin:11mm}
+}
