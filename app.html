@@ -19,6 +19,43 @@
 .map-modes{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}.rooms{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.room{border:1px solid var(--line);border-radius:10px;background:#fff}.room h3{margin:0;padding:13px;border-bottom:1px solid var(--line);color:var(--blue)}.room .body{padding:14px;color:var(--muted);min-height:62px}.mini-tabs{display:flex;gap:5px;overflow:auto;margin:12px 0;border-bottom:1px solid #b9cbe1}.mini-tab{padding:10px 14px;background:#e8eef6;border:0;font-weight:800;color:#61738a}.mini-tab.on{background:#fff;color:var(--blue);border-bottom:2px solid var(--blue)}
 .login{min-height:100vh;display:grid;place-items:center;padding:24px}.loginbox{width:min(440px,100%);background:#fff;border:1px solid var(--line);border-radius:14px;padding:28px;box-shadow:0 14px 40px #10294a1c}.loginbox h1{color:var(--blue)}
 @media(max-width:1000px){.filters,.consult-filters{grid-template-columns:1fr 1fr}.grid{grid-template-columns:1fr}.span2,.span3{grid-column:span 1}.cards,.rooms{grid-template-columns:1fr 1fr}}@media(max-width:600px){.wrap{padding:10px}.topbar{padding:10px}.filters,.consult-filters,.cards,.rooms,.checkgrid{grid-template-columns:1fr}.brand small{display:none}}
+
+/* Fila principal: cabe na área disponível sem rolagem horizontal; demais tabelas intactas. */
+@media screen {
+ #shell #content .queue-wrap{overflow-x:hidden!important;max-width:100%!important}
+ #shell #content table.queue-table{width:100%!important;min-width:0!important;table-layout:fixed!important}
+ #shell #content .queue-table th,#shell #content .queue-table td{
+   padding:7px 4px!important;font-size:10.5px!important;
+   overflow-wrap:anywhere!important;word-break:normal!important;white-space:normal!important;
+ }
+ #shell #content .queue-table th{font-size:10px!important}
+ #shell #content .queue-table th:nth-child(1){width:18%}
+ #shell #content .queue-table th:nth-child(2){width:11%}
+ #shell #content .queue-table th:nth-child(3){width:7%}
+ #shell #content .queue-table th:nth-child(4){width:10%}
+ #shell #content .queue-table th:nth-child(5){width:10%}
+ #shell #content .queue-table th:nth-child(6){width:12%}
+ #shell #content .queue-table th:nth-child(7){width:9%}
+ #shell #content .queue-table th:nth-child(8){width:9%}
+ #shell #content .queue-table th:nth-child(9){width:7%}
+ #shell #content .queue-table th:nth-child(10){width:7%}
+ #shell #content .queue-table .acts{min-width:0!important;display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:4px!important}
+ #shell #content .queue-table .acts .btn{min-width:0!important;white-space:normal!important;font-size:10px!important;padding:5px 3px!important}
+}
+@media screen and (max-width:1100px){
+ #shell #content .queue-table thead{display:none!important}
+ #shell #content .queue-table,.queue-table tbody{display:block!important}
+ #shell #content .queue-table tbody tr{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:0!important;border-bottom:1px solid #cbd7e5!important;padding:7px!important}
+ #shell #content .queue-table td{display:block!important;border:0!important;padding:5px 7px!important;font-size:11px!important}
+ #shell #content .queue-table td::before{content:attr(data-label);display:block;font-weight:800;font-size:9px;color:#64748b;margin-bottom:3px}
+ #shell #content .queue-table td:first-child{grid-column:1/-1;order:10}
+ #shell #content .queue-table .acts{display:flex!important;flex-wrap:wrap!important}
+ #shell #content .queue-table .acts .btn{padding:5px 8px!important}
+}
+@media screen and (max-width:650px){
+ #shell #content .queue-table tbody tr{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+
 </style>
 <link rel="stylesheet" href="/jordana-sigma-theme.css?v=20261104-header-single03">
 </head>
@@ -56,6 +93,15 @@ async function load(){
   }
   if(fetched>0&&rows.length!==fetched)console.warn('Sincronização: registros repetidos durante paginação. Total exclusivo:',rows.length);
   S.rows=rows;
+  // Nomes associados à autoria do cadastro (consulta somente leitura).
+  try{
+    const creators=[...new Set(rows.map(x=>x.created_by).filter(Boolean))];
+    S.registrarNames=S.registrarNames||{};
+    if(creators.length){
+      const profiles=await api('/rest/v1/profiles?select=id,full_name&id=in.('+creators.map(encodeURIComponent).join(',')+')');
+      for(const p of profiles||[])if(p.id)S.registrarNames[p.id]=p.full_name||'';
+    }
+  }catch(e){console.warn('Nomes de responsáveis indisponíveis:',e.message)}
   S.lastCompletePatientsSync=new Date().toISOString();
   return rows;
  })();
@@ -70,7 +116,8 @@ function stageRows(stage){return filtered(S.rows.filter(x=>x.stage===stage))}fun
 function renderCurrent(){let c=document.getElementById('content');if(!c)return;if(S.view==='consulta_preop')return renderConsult();if(S.view==='duploj')return renderDoubleJ();if(S.view==='exames')return renderExams();if(S.view==='entrevista_tecnico')return renderTriage();if(S.view==='avaliacao_enfermeiro')return renderNurse();if(S.view==='mapa_cirurgico')return renderMap();if(S.view==='indicadores')return renderIndicators();if(S.view==='suspensas')return renderGeneric(suspendRows(),'Suspensas');return renderGeneric(stageRows(S.view),labels[S.view])}
 function statusPill(x){let c=x==='SUSPENSA'?'bad':x==='REALIZADA'||x==='AUTORIZADA'?'ok':'warn';return `<span class="pill ${c}">${esc(x||'')}</span>`}
 function actionButtons(x){return `<div class="acts"><button class="btn small" onclick="editPatient('${x.id}')">✏ Editar</button><button class="btn green small" onclick="nextStage('${x.id}')">➡ Próxima etapa</button><button class="btn orange small" onclick="suspendPatient('${x.id}')">⚠ Suspensa</button><button class="btn red small" onclick="deletePatient('${x.id}')">🗑 Excluir</button></div>`}
-function baseTable(rows){return `<div class="tablewrap"><table class="table"><thead><tr><th class="actions">AÇÕES RÁPIDAS</th><th>NOME</th><th>IDS</th><th>CPF</th><th>CONTATO</th><th>PROCEDIMENTO</th><th>ESPECIALIDADE</th><th>MÉDICO</th><th>SITUAÇÃO</th></tr></thead><tbody>${rows.length?rows.map(x=>`<tr><td>${actionButtons(x)}</td><td><b>${esc(x.patient_name)}</b></td><td>${esc(x.ids||'')}</td><td>${esc(x.cpf||'')}</td><td>${esc(x.phone||'')}</td><td>${esc(x.procedure_name||'')}</td><td>${esc(x.specialty||'')}</td><td>${esc(x.surgeon||'')}</td><td>${statusPill(x.patient_status)}</td></tr>`).join(''):'<tr><td colspan="9" style="text-align:center;padding:28px">Nenhum registro encontrado.</td></tr>'}</tbody></table></div>`}
+function queueRegistrar(x){const direct=x.registration_responsible||x.registration_responsible_name||x.registration_professional||x.registered_by_name||x.responsavel_cadastro||x.profissional_responsavel_cadastro||x.created_by_name;return direct||S.registrarNames?.[x.created_by]||''}
+function baseTable(rows){const queue=S.view==='fila';return `<div class="tablewrap ${queue?'queue-wrap':''}"><table class="table ${queue?'queue-table':''}"><thead><tr><th class="actions">AÇÕES RÁPIDAS</th><th>NOME</th><th>IDS</th><th>CPF</th><th>CONTATO</th><th>PROCEDIMENTO</th><th>ESPECIALIDADE</th><th>MÉDICO</th><th>SITUAÇÃO</th>${queue?'<th>RESPONSÁVEL PELO CADASTRO</th>':''}</tr></thead><tbody>${rows.length?rows.map(x=>`<tr><td data-label="Ações rápidas">${actionButtons(x)}</td><td data-label="Nome"><b>${esc(x.patient_name)}</b></td><td data-label="IDS">${esc(x.ids||'')}</td><td data-label="CPF">${esc(x.cpf||'')}</td><td data-label="Contato">${esc(x.phone||'')}</td><td data-label="Procedimento">${esc(x.procedure_name||'')}</td><td data-label="Especialidade">${esc(x.specialty||'')}</td><td data-label="Médico">${esc(x.surgeon||'')}</td><td data-label="Situação">${statusPill(x.patient_status)}</td>${queue?`<td data-label="Responsável pelo cadastro">${esc(queueRegistrar(x))||'—'}</td>`:''}</tr>`).join(''):`<tr><td colspan="${queue?10:9}" style="text-align:center;padding:28px">Nenhum registro encontrado.</td></tr>`}</tbody></table></div>`}
 function renderGeneric(rows,title){document.getElementById('content').innerHTML=`<section class="card"><div class="section-head"><div><h2>📋 ${title} (${rows.length} pacientes)</h2><div class="sub">Fluxo compartilhado entre as máquinas</div></div><button class="btn primary" onclick="editPatient()">+ Novo Paciente</button></div><div class="notice">Use “Próxima etapa” para avançar o paciente. Ações críticas possuem dupla confirmação.</div>${baseTable(rows)}</section>`}
 function field(label,id,val='',type='text',cls=''){return `<div class="field ${cls}"><label>${label}</label><input id="f_${id}" type="${type}" value="${esc(val||'')}"></div>`}
 function selectField(label,id,val,opts,cls=''){return `<div class="field ${cls}"><label>${label}</label><select id="f_${id}"><option value=""></option>${opts.map(o=>`<option ${o===val?'selected':''}>${esc(o)}</option>`).join('')}</select></div>`}
