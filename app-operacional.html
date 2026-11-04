@@ -325,7 +325,7 @@ f.addEventListener('load',()=>{try{const d=f.contentDocument;const inject=()=>{i
    if(doc.querySelector('script[data-hsj-map-filter-repair]'))return;
    const s=doc.createElement('script');
    s.dataset.hsjMapFilterRepair='1';
-   s.src='/patch-mapa-isolar-filtros-acoes-20261104.js?v=20261104-01';
+   s.src='/patch-mapa-isolar-filtros-acoes-20261104.js?v=20261104-02';
    doc.head.appendChild(s);
   };
   const existing=[...doc.scripts].find(s=>s.src?.includes(marker));
