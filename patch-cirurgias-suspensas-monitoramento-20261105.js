@@ -103,7 +103,7 @@ function renameSuspensionUI(){
  if(tabs){
   for(const b of tabs.querySelectorAll('button')){
    const onclick=b.getAttribute('onclick')||'';
-   if(/setView\\(['"]suspensas['"]/.test(onclick))b.textContent='Cirurgias Suspensas (Indicadores)';
+   if(onclick.includes("setView('suspensas'"))if(b.textContent!=='Cirurgias Suspensas (Indicadores)')b.textContent='Cirurgias Suspensas (Indicadores)';
   }
  }
  const modal=document.getElementById('modal');
@@ -111,7 +111,7 @@ function renameSuspensionUI(){
   for(const select of modal.querySelectorAll('select')){
    for(const option of select.options){
     if(option.value==='suspensas'){
-     option.textContent='Cirurgias Suspensas (Indicadores) — somente relatório';
+     if(option.textContent!=='Cirurgias Suspensas (Indicadores) — somente relatório')option.textContent='Cirurgias Suspensas (Indicadores) — somente relatório';
      option.disabled=true;
      if(option.selected)select.value='';
     }
