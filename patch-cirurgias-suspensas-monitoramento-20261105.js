@@ -6,6 +6,7 @@ const UUID=/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
 const safe=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const destinations={enfermeiro:'Monitoramento Enfermeiro',supervisao:'Monitoramento Supervisão',administrativo:'Monitoramento Administrativo'};
 let submitting=false,events=[],loaded=false;
+const hsjSuspensionPreflight=new Map();
 const dateBR=s=>{const t=String(s||'').slice(0,10);return /^\d{4}-\d{2}-\d{2}$/.test(t)?t.split('-').reverse().join('/'):t||'—'};
 function openSuspension(id){
  const x=(S.rows||[]).find(p=>String(p.id)===String(id));
@@ -15,14 +16,59 @@ function openSuspension(id){
  '<div class="mb"><div class="notice"><b>'+safe(x.patient_name)+'</b><div>Cirurgia: '+safe(dateBR(x.surgery_date))+' · '+safe(x.procedure_name||'')+'</div><small>O motivo e a equipe de monitoramento são obrigatórios. A operação só será concluída quando o encaminhamento também for salvo.</small></div>'+
  '<div class="field"><label>Data prevista da cirurgia *</label><input id="hsjSuspDate" type="date" required value="'+safe(String(x.surgery_date||'').slice(0,10))+'"><small>Informe a data em que a cirurgia estava programada para ocorrer.</small></div>'+
  '<div class="field"><label>Motivo da suspensão *</label><textarea rows="4" id="hsjSuspReason" placeholder="Descreva objetivamente o motivo (ex.: falta de anestesista)" maxlength="2000"></textarea></div>'+
- '<div class="field"><label>Encaminhar obrigatoriamente para *</label><select id="hsjSuspMonitor"><option value="">Selecione a equipe responsável</option>'+
- Object.entries(destinations).map(([k,v])=>'<option value="'+k+'">'+v+'</option>').join('')+'</select></div></div>'+
+ '<div class="field"><label>Encaminhar obrigatoriamente para *</label><select id="hsjSuspMonitor" disabled><option value="">Conferindo monitoramentos...</option>'+
+ Object.entries(destinations).map(([k,v])=>'<option value="'+k+'">'+v+'</option>').join('')+'</select><div id="hsjSuspPendingInfo" class="sub" role="status" style="margin-top:7px;color:#785b1c">Verificando encaminhamentos abertos para evitar duplicidade...</div></div></div>'+
  '<div class="mf"><button class="btn primary" id="hsjSuspSave" type="button">Confirmar suspensão e encaminhar</button></div></div></div>';
  document.getElementById('modal').innerHTML=html;
- document.getElementById('hsjSuspSave').onclick=()=>saveSuspension(id,x.updated_at);
+ const save=document.getElementById('hsjSuspSave');save.disabled=true;
+ save.onclick=()=>saveSuspension(id,x.updated_at);
+ checkSuspensionPending(id);
+}
+async function checkSuspensionPending(id){
+ const select=document.getElementById('hsjSuspMonitor'),note=document.getElementById('hsjSuspPendingInfo'),save=document.getElementById('hsjSuspSave');
+ if(!select||!note||!save)return;
+ hsjSuspensionPreflight.set(id,{ready:false});
+ try{
+  const paths=[
+   '/rest/v1/supervision_referrals?select=id,reason&status=eq.aguardando&surgery_id=eq.'+encodeURIComponent(id),
+   '/rest/v1/administrative_referrals?select=id,reason&status=eq.aguardando&surgery_id=eq.'+encodeURIComponent(id),
+   '/rest/v1/monitoring_claims_hsj?select=id,reason,monitor_type&status=eq.aguardando&surgery_id=eq.'+encodeURIComponent(id)
+  ];
+  const [supervision,administrative,claims]=await Promise.all(paths.map(p=>api(p)));
+  if(!select.isConnected)return;
+  const pendings=[
+   ...(supervision||[]).map(x=>({...x,type:'supervisao'})),
+   ...(administrative||[]).map(x=>({...x,type:'administrativo'})),
+   ...(claims||[]).map(x=>({...x,type:x.monitor_type}))
+  ];
+  if(pendings.length>1){
+   note.textContent='⚠ Este paciente já possui '+pendings.length+' encaminhamentos aguardando. Regularize as pendências antes de registrar uma nova suspensão.';
+   hsjSuspensionPreflight.set(id,{ready:false});return;
+  }
+  const existing=pendings[0];
+  select.disabled=false;
+  if(existing){
+   select.value=existing.type;
+   for(const option of select.options)option.disabled=Boolean(option.value&&option.value!==existing.type);
+   note.textContent='⚠ Já existe encaminhamento aberto em '+(destinations[existing.type]||existing.type)+'. A suspensão poderá ser registrada nessa equipe, preservando o encaminhamento anterior e sem gerar outro. Para mudar de equipe, conclua ou redirecione primeiro a pendência existente.';
+  }else{
+   for(const option of select.options)option.disabled=false;
+   select.value='';
+   note.textContent='Nenhum encaminhamento pendente. Escolha a equipe que acompanhará esta suspensão.';
+  }
+  hsjSuspensionPreflight.set(id,{ready:true,type:existing?.type||null});
+  save.disabled=false;
+ }catch(err){
+  if(!note.isConnected)return;
+  note.textContent='Falha ao consultar monitoramentos: '+err.message+'. Não é seguro registrar a suspensão antes de conferir a pendência.';
+  hsjSuspensionPreflight.set(id,{ready:false});
+ }
 }
 async function saveSuspension(id,expected){
  const reason=document.getElementById('hsjSuspReason')?.value.trim(),dest=document.getElementById('hsjSuspMonitor')?.value,plannedDate=document.getElementById('hsjSuspDate')?.value;
+ const preflight=hsjSuspensionPreflight.get(id);
+ if(!preflight?.ready)return alert('É necessário conferir primeiro os encaminhamentos existentes.');
+ if(preflight.type&&dest!==preflight.type)return alert('Este paciente já possui monitoramento aberto em '+(destinations[preflight.type]||preflight.type)+'. Selecione essa equipe.');
  if(!plannedDate||!/^\d{4}-\d{2}-\d{2}$/.test(plannedDate))return alert('Informe obrigatoriamente a data prevista da cirurgia.');
  if(!reason||reason.length<3)return alert('Informe obrigatoriamente o motivo da suspensão.');
  if(!destinations[dest])return alert('Selecione Enfermeiro, Supervisão ou Administrativo.');
@@ -34,7 +80,7 @@ async function saveSuspension(id,expected){
   if(!out)throw Error('O banco não retornou confirmação do encaminhamento.');
   document.getElementById('modal').innerHTML='';
   await load();renderCurrent();
-  alert('Cirurgia suspensa registrada e encaminhada para '+destinations[dest]+'. O paciente saiu do Mapa e a ocorrência foi incluída no relatório.');
+  alert('Suspensão registrada no relatório e vinculada ao '+destinations[dest]+'. O cadastro permanece na Fila de Cirurgia.');
  }catch(e){alert('Suspensão NÃO concluída: '+e.message+'. Confira os dados antes de repetir.')}
  finally{submitting=false;if(b)b.disabled=false}
 }
