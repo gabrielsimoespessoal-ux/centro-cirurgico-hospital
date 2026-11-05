@@ -96,4 +96,45 @@ const obs=new MutationObserver(()=>{if(S.view==='mapa_cirurgico')addButtons()});
 const root=document.getElementById('content');
 if(root)obs.observe(root,{childList:true,subtree:true});
 if(S.view==='suspensas')renderReport();else if(S.view==='mapa_cirurgico')addButtons();
+/* Nomenclatura padronizada; indicadores nunca são destinos operacionais. */
+labels.suspensas='Cirurgias Suspensas (Indicadores)';
+function renameSuspensionUI(){
+ const tabs=document.getElementById('tabs');
+ if(tabs){
+  for(const b of tabs.querySelectorAll('button')){
+   const onclick=b.getAttribute('onclick')||'';
+   if(/setView\\(['"]suspensas['"]/.test(onclick))b.textContent='Cirurgias Suspensas (Indicadores)';
+  }
+ }
+ const modal=document.getElementById('modal');
+ if(modal){
+  for(const select of modal.querySelectorAll('select')){
+   for(const option of select.options){
+    if(option.value==='suspensas'){
+     option.textContent='Cirurgias Suspensas (Indicadores) — somente relatório';
+     option.disabled=true;
+     if(option.selected)select.value='';
+    }
+   }
+  }
+ }
+}
+const oldTabs=window.renderTabs;
+window.renderTabs=function(){const result=oldTabs.apply(this,arguments);renameSuspensionUI();return result};
+const oldChoose=window.hsjEscolherEtapaV26;
+if(typeof oldChoose==='function')window.hsjEscolherEtapaV26=function(){const result=oldChoose.apply(this,arguments);renameSuspensionUI();return result};
+const oldConfirm=window.hsjConfirmarEtapaV26;
+if(typeof oldConfirm==='function')window.hsjConfirmarEtapaV26=function(){
+ if(document.getElementById('hsjStageV26')?.value==='suspensas')return alert('Cirurgias Suspensas (Indicadores) é apenas um relatório. Use a ação Cirurgia suspensa no Mapa Cirúrgico.');
+ return oldConfirm.apply(this,arguments);
+};
+const oldAdminConfirm=window.hsjConcluirAdminV26;
+if(typeof oldAdminConfirm==='function')window.hsjConcluirAdminV26=function(){
+ if(document.getElementById('hsjAdminReturnV26')?.value==='suspensas')return alert('A aba Cirurgias Suspensas (Indicadores) não recebe pacientes.');
+ return oldAdminConfirm.apply(this,arguments);
+};
+const modalTarget=document.getElementById('modal');
+if(modalTarget)new MutationObserver(renameSuspensionUI).observe(modalTarget,{childList:true,subtree:true});
+renameSuspensionUI();
+
 })();
