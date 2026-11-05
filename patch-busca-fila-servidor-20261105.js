@@ -31,14 +31,15 @@ function renderResults(matches,q){
   go.onclick=async()=>{
    try{
     if(typeof window.clearGlobalFiltersV16==='function')window.clearGlobalFiltersV16();
-    const current=S.view;
-    S.view=x.stage==='pendencias'?'fila':x.stage;
-    if(typeof window.setView==='function')window.setView(S.view);
-    else{renderTabs();renderCurrent()}
+    const destination=x.stage==='pendencias'?'fila':x.stage;
+    const tab=[...document.querySelectorAll('#tabs .tab')].find(el=>(el.getAttribute('onclick')||'').includes("setView('"+destination+"'"));
+    if(tab&&typeof window.setView==='function')window.setView(destination,tab);
+    else{S.view=destination;renderTabs();renderCurrent()}
+    document.querySelectorAll('#tabs .tab').forEach(el=>el.classList.toggle('on',(el.getAttribute('onclick')||'').includes("setView('"+destination+"'")));
     if(S.view==='fila'&&typeof window.setFilaRevalidationV15==='function')window.setFilaRevalidationV15('');
     if(S.view==='fila'){
-      const f=document.getElementById('gfName');if(f)f.value='';
       if(typeof window.clearGlobalFiltersV16==='function')window.clearGlobalFiltersV16();
+      const f=document.getElementById('gfName');if(f)f.value='';
       renderCurrent();
     }
     const results=[...document.querySelectorAll('#content tbody tr')];
