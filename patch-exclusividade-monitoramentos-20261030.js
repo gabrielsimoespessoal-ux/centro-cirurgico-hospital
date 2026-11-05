@@ -24,9 +24,11 @@ const oldFiltered=window.filtered;
 window.filtered=function(rows){
  const out=oldFiltered.apply(this,arguments);
  if(!Array.isArray(out)||monitors.has(S.view)||['indicadores','satisfacao_indicadores','gerenciador_usuarios'].includes(S.view))return out;
- // Cirurgias suspensas continuam visíveis na Fila para acompanhamento e reagendamento.
- // A pendência segue exclusivamente no monitoramento indicado, sem duplicar o cadastro.
- return out.filter(x=>!firstFor(x.id) || (S.view==='fila' && x.stage==='fila' && x.patient_status==='SUSPENSA'));
+ // A Fila de Cirurgia é a etapa operacional do paciente e não pode ser ocultada
+ // por pendências de monitoramento (supervisão, enfermagem ou administrativo).
+ // Exclusividade continua válida para os demais fluxos e para encaminhamentos duplicados.
+ if(S.view==='fila')return out;
+ return out.filter(x=>!firstFor(x.id));
 };
 function cleanInbox(){
  if(!monitors.has(S.view))return;
