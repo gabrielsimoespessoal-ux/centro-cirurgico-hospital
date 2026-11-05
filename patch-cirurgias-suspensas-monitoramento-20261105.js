@@ -123,10 +123,8 @@ window.renderTabs=function(){const result=oldTabs.apply(this,arguments);renameSu
 const oldChoose=window.hsjEscolherEtapaV26;
 if(typeof oldChoose==='function')window.hsjEscolherEtapaV26=function(){const result=oldChoose.apply(this,arguments);renameSuspensionUI();return result};
 const oldConfirm=window.hsjConfirmarEtapaV26;
-if(typeof oldConfirm==='function')window.hsjConfirmarEtapaV26=function(){
- if(document.getElementById('hsjStageV26')?.value==='suspensas'){
-   const patientId=(arguments[0]||'');return openSuspension(patientId);
- }
+if(typeof oldConfirm==='function')window.hsjConfirmarEtapaV26=function(id){
+ if(document.getElementById('hsjStageV26')?.value==='suspensas')return openSuspension(id);
  return oldConfirm.apply(this,arguments);
 };
 const oldAdminConfirm=window.hsjConcluirAdminV26;
