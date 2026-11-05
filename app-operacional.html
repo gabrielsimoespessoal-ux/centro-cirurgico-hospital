@@ -344,4 +344,30 @@ f.addEventListener('load',()=>{try{const d=f.contentDocument;const inject=()=>{i
   observer.observe(doc.head,{childList:true});
  });
 })();
+</script><script>
+(function(){
+ const frame=document.getElementById('appFrame');if(!frame)return;
+ frame.addEventListener('load',()=>{
+  const doc=frame.contentDocument;if(!doc)return;
+  const marker='patch-mapa-isolar-filtros-acoes-20261104.js';
+  let installed=false;
+  function install(){
+   if(installed||doc.querySelector('script[data-hsj-suspensao-monitoramento]'))return;
+   installed=true;
+   const script=doc.createElement('script');
+   script.dataset.hsjSuspensaoMonitoramento='1';
+   script.src='/patch-cirurgias-suspensas-monitoramento-20261105.js?v=20261105-01';
+   script.onerror=()=>console.error('Falha ao carregar formulário de cirurgias suspensas');
+   doc.head.appendChild(script);
+  }
+  const existing=[...doc.querySelectorAll('script')].find(x=>x.src?.includes(marker));
+  if(existing){existing.addEventListener('load',install,{once:true});if(doc.defaultView?.__hsjMapFilterRepairNov2026)install();return}
+  const obs=new MutationObserver(rs=>{
+   for(const r of rs)for(const n of r.addedNodes){
+    if(n?.tagName==='SCRIPT'&&n.src?.includes(marker)){obs.disconnect();n.addEventListener('load',install,{once:true});return}
+   }
+  });
+  obs.observe(doc.head,{childList:true});
+ });
+})();
 </script></body></html>
