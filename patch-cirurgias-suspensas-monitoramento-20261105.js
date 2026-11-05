@@ -113,7 +113,7 @@ function renderReport(){
  '<div id="hsjSuspRows">Carregando histórico...</div></section>';
  document.getElementById('hsjSuspReload').onclick=async()=>{loaded=false;await loadEvents();if(S.view==='suspensas')drawRows()};
  document.getElementById('hsjSuspCsv').onclick=()=>downloadReport();
- document.getElementById('hsjSuspPrint').onclick=()=>window.print();
+ document.getElementById('hsjSuspPrint').onclick=printSuspensionReport;
  for(const k of ['hsjSuspFrom','hsjSuspTo','hsjSuspSearch'])document.getElementById(k).addEventListener('input',drawRows);
  if(loaded)drawRows();else loadEvents().then(()=>{if(S.view==='suspensas')drawRows()});
 }
@@ -125,13 +125,42 @@ function filteredEvents(){
   return (!start||d>=start)&&(!end||d<=end)&&(!q||[p.patient_name,p.specialty,p.surgeon,p.procedure_name,r.reason].some(x=>String(x||'').toLowerCase().includes(q)));
  });
 }
+function summarizeSuspensions(rows){
+ const tally=fn=>{const m=new Map();for(const r of rows){const k=String(fn(r)||'Não informado').trim()||'Não informado';m.set(k,(m.get(k)||0)+1)}return [...m].sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0],'pt-BR'))};
+ const reasons=tally(r=>r.reason),destinationsCount=tally(r=>destinations[r.destination]||r.destination);
+ const specialty=tally(r=>S.rows.find(p=>p.id===r.surgery_id)?.specialty);
+ const dates=rows.map(r=>String(r.suspended_at||'').slice(0,10)).filter(Boolean).sort();
+ return {total:rows.length,reasons,destinationsCount,specialty,first:dates[0],last:dates[dates.length-1]};
+}
+function summaryMarkup(summary){
+ const grid=(name,items)=>'<div class="hsj-susp-summary-card"><b>'+safe(name)+'</b>'+
+ (items.length?items.map(([key,n])=>'<div class="hsj-susp-summary-entry"><span>'+safe(key)+'</span><strong>'+n+'</strong></div>').join(''):'<p>Sem ocorrências.</p>')+'</div>';
+ return '<section id="hsjSuspSummary"><h3>Resumo das suspensões</h3>'+
+ '<div class="hsj-susp-summary-kpis"><div><strong>'+summary.total+'</strong><span>Cirurgias suspensas</span></div><div><strong>'+summary.reasons.length+'</strong><span>Motivos registrados</span></div><div><strong>'+summary.specialty.length+'</strong><span>Especialidades</span></div></div>'+
+ '<div class="hsj-susp-summary-grid">'+grid('Motivos das suspensões',summary.reasons)+grid('Por especialidade',summary.specialty)+grid('Encaminhamentos',summary.destinationsCount)+'</div></section>';
+}
+function reportTable(rows){
+ const header='<table class="table"><thead><tr><th>Data da suspensão</th><th>Paciente</th><th>Data prevista</th><th>Procedimento</th><th>Especialidade</th><th>Médico</th><th>Motivo</th><th>Monitoramento</th></tr></thead><tbody>';
+ return header+(rows.map(r=>{const p=S.rows.find(x=>x.id===r.surgery_id)||{};return '<tr><td>'+safe(new Date(r.suspended_at).toLocaleString('pt-BR'))+'</td><td>'+safe(p.patient_name||'Cadastro indisponível')+'</td><td>'+safe(dateBR(r.surgery_date))+'</td><td>'+safe(p.procedure_name||'—')+'</td><td>'+safe(p.specialty||'—')+'</td><td>'+safe(p.surgeon||'—')+'</td><td>'+safe(r.reason)+'</td><td>'+safe(destinations[r.destination]||r.destination)+'</td></tr>'}).join('')||'<tr><td colspan="8">Nenhuma cirurgia suspensa registrada no período.</td></tr>')+'</tbody></table>';
+}
 function drawRows(){
  const target=document.getElementById('hsjSuspRows');if(!target||S.view!=='suspensas'||!loaded)return;
- const rows=filteredEvents();
- const header='<table class="table"><thead><tr><th>Data da suspensão</th><th>Paciente</th><th>Data prevista</th><th>Procedimento</th><th>Especialidade</th><th>Médico</th><th>Motivo obrigatório</th><th>Monitoramento</th></tr></thead><tbody>';
- target.innerHTML='<div class="notice"><b>Total de suspensões no filtro: '+rows.length+'</b>. Cada ocorrência permanece registrada mesmo após o paciente avançar para outra etapa.</div><div class="tablewrap">'+header+
- (rows.map(r=>{const p=S.rows.find(x=>x.id===r.surgery_id)||{};return '<tr><td>'+safe(new Date(r.suspended_at).toLocaleString('pt-BR'))+'</td><td>'+safe(p.patient_name||'Cadastro indisponível')+'</td><td>'+safe(dateBR(r.surgery_date))+'</td><td>'+safe(p.procedure_name||'—')+'</td><td>'+safe(p.specialty||'—')+'</td><td>'+safe(p.surgeon||'—')+'</td><td>'+safe(r.reason)+'</td><td>'+safe(destinations[r.destination]||r.destination)+'</td></tr>'}).join('')||'<tr><td colspan="8">Nenhuma cirurgia suspensa registrada no período.</td></tr>')+'</tbody></table></div>';
+ const rows=filteredEvents(),summary=summarizeSuspensions(rows);
+ target.innerHTML=summaryMarkup(summary)+'<h3 class="hsj-susp-detail-heading">Relação detalhada das suspensões</h3><div class="tablewrap">'+reportTable(rows)+'</div>';
 }
+function printSuspensionReport(){
+ if(!loaded)return alert('O relatório ainda está carregando. Atualize os indicadores antes de imprimir.');
+ const rows=filteredEvents(),summary=summarizeSuspensions(rows);
+ const from=document.getElementById('hsjSuspFrom')?.value||'',to=document.getElementById('hsjSuspTo')?.value||'';
+ const range=from||to?('Período do filtro: '+(from?dateBR(from):'Início')+' até '+(to?dateBR(to):'Hoje')):'Todas as datas';
+ const w=window.open('','_blank');
+ if(!w)return alert('Permita abrir janelas para imprimir o relatório de suspensões.');
+ const css='@page{size:A4 landscape;margin:10mm}body{font-family:Arial,Helvetica,sans-serif;color:#1c2f43;font-size:10px;margin:12px}h1{font-size:20px;margin:0 0 4px}h2{font-size:14px;margin-top:16px}.hsj-susp-summary-kpis{display:flex;gap:10px;margin:10px 0}.hsj-susp-summary-kpis>div{flex:1;border:1px solid #bdcddd;padding:10px}.hsj-susp-summary-kpis strong{display:block;font-size:19px}.hsj-susp-summary-kpis span{display:block}.hsj-susp-summary-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.hsj-susp-summary-card{border:1px solid #bdcddd;padding:10px;break-inside:avoid}.hsj-susp-summary-entry{display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid #e3e8ed;padding:4px 0}.hsj-susp-summary-entry span{overflow-wrap:anywhere}table{border-collapse:collapse;width:100%;table-layout:fixed;font-size:9px}th,td{border:1px solid #b8c6d6;padding:6px 4px;vertical-align:top;overflow-wrap:anywhere}th{background:#e8eef5;text-align:left}tr{break-inside:avoid}thead{display:table-header-group}h3{font-size:13px}';
+ w.document.open();w.document.write('<!doctype html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Relatório de Cirurgias Suspensas</title><style>'+css+'</style></head><body><h1>Hospital São José — Cirurgias Suspensas (Indicadores)</h1><p>'+safe(range)+' · Total de ocorrências: '+rows.length+'</p>'+summaryMarkup(summary)+'<h2>Relação detalhada das suspensões</h2>'+reportTable(rows)+'</body></html>');w.document.close();w.focus();w.print();
+}
+const reportStyles=document.createElement('style');
+reportStyles.textContent='#hsjSuspSummary{margin:14px 0}.hsj-susp-summary-kpis{display:flex;gap:10px;margin:10px 0}.hsj-susp-summary-kpis>div{flex:1;border:1px solid #c9d7e7;border-radius:7px;padding:12px;background:#f4f8fe}.hsj-susp-summary-kpis strong{display:block;font-size:23px}.hsj-susp-summary-kpis span{font-size:11px}.hsj-susp-summary-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.hsj-susp-summary-card{padding:12px;border:1px solid #c9d7e7;border-radius:7px}.hsj-susp-summary-entry{display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid #e5edf4;padding:6px 0;font-size:12px}.hsj-susp-summary-entry span{overflow-wrap:anywhere}.hsj-susp-detail-heading{margin-top:16px}@media(max-width:680px){.hsj-susp-summary-grid{grid-template-columns:1fr}}';
+document.head.appendChild(reportStyles);
 function downloadReport(){
  const cols=['Data da suspensão','Paciente','IDS','Data da cirurgia','Procedimento','Especialidade','Médico','Motivo','Monitoramento'];
  const data=filteredEvents().map(r=>{const p=S.rows.find(x=>x.id===r.surgery_id)||{};return [new Date(r.suspended_at).toLocaleString('pt-BR'),p.patient_name||'',p.ids||'',dateBR(r.surgery_date),p.procedure_name||'',p.specialty||'',p.surgeon||'',r.reason,destinations[r.destination]||r.destination]});
