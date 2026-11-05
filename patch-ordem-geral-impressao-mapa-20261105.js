@@ -2,112 +2,158 @@
 'use strict';
 if(window.__hsjOrdemGeralMapa20261105)return;
 window.__hsjOrdemGeralMapa20261105=true;
-const safe=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const formatDate=d=>/^\d{4}-\d{2}-\d{2}$/.test(String(d||''))?String(d).split('-').reverse().join('/'):'—';
-const state={date:'',rows:[],dirty:false,loading:false,loaded:false,revision:0};
-const currentMap=()=>Array.isArray(S.rows)?S.rows.filter(x=>x.active!==false&&x.stage==='mapa_cirurgico'&&x.surgery_date):[];
-function dateDefault(){
- const dates=[...new Set(currentMap().map(x=>String(x.surgery_date).slice(0,10)))].sort();
- const now=new Date(),localToday=[now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),String(now.getDate()).padStart(2,'0')].join('-');
- return dates.find(d=>d>=localToday)||dates[dates.length-1]||localToday;
+const normalized=v=>String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase();
+const safe=v=>String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+const state={positions:new Map(),busy:new Set(),fetchVersion:0};
+function mapPatients(){return (S.rows||[]).filter(p=>p.active!==false&&p.stage==='mapa_cirurgico');}
+function groupKey(p){return String(p.surgery_date||'').slice(0,10)+'|'+normalized(p.specialty||'Não informada');}
+function orderFor(p){return state.positions.get(p.id);}
+function fallbackOrder(){
+ const grouped=new Map(),output=new Map();
+ for(const p of mapPatients()){
+  const key=groupKey(p);if(!grouped.has(key))grouped.set(key,[]);
+  grouped.get(key).push(p);
+ }
+ for(const members of grouped.values()){
+  members.sort((a,b)=>{
+   const x=orderFor(a),y=orderFor(b);
+   return (x??999999)-(y??999999)
+   ||String(a.map_room||'').localeCompare(String(b.map_room||''),'pt-BR',{numeric:true})
+   ||String(a.patient_name||'').localeCompare(String(b.patient_name||''),'pt-BR')
+   ||String(a.id).localeCompare(String(b.id));
+  });
+  members.forEach((p,i)=>output.set(p.id,i+1));
+ }
+ return output;
 }
-const regular=(a,b)=>String(a.map_room||'').localeCompare(String(b.map_room||''),'pt-BR',{numeric:true})||String(a.patient_name||'').localeCompare(String(b.patient_name||''),'pt-BR');
-function statusBox(text,error=false){
- const el=document.getElementById('hsjOrdemMsg');if(el){el.textContent=text;el.style.color=error?'#a32727':'#39536d'}
+function identify(row,table,patients){
+ const actions=[...row.querySelectorAll('[onclick]')].map(el=>el.getAttribute('onclick')||'').join(' ');
+ const uuid=actions.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i)?.[0];
+ if(uuid){return patients.find(p=>p.id===uuid)||null}
+ const heads=[...table.querySelectorAll('thead th')].map(th=>normalized(th.textContent));
+ const iName=heads.findIndex(h=>h==='paciente'||h==='nome'||h.includes('paciente /'));
+ const iProc=heads.findIndex(h=>h==='procedimento');
+ const iRoom=heads.findIndex(h=>h==='sala');
+ const iDate=heads.findIndex(h=>h==='data cirurgia'||h==='data da cirurgia');
+ const name=normalized(iName>=0?row.cells[iName]?.textContent:'');
+ if(!name)return null;
+ let candidates=patients.filter(p=>normalized(p.patient_name)===name||name.startsWith(normalized(p.patient_name)));
+ if(iProc>=0)candidates=candidates.filter(p=>normalized(row.cells[iProc]?.textContent).includes(normalized(p.procedure_name)));
+ if(iRoom>=0)candidates=candidates.filter(p=>normalized(row.cells[iRoom]?.textContent)===normalized(p.map_room));
+ if(iDate>=0)candidates=candidates.filter(p=>{
+  const dt=String(p.surgery_date||'').slice(0,10);
+  const cell=normalized(row.cells[iDate]?.textContent);
+  return !dt||cell.includes(dt)||cell.includes(dt.split('-').reverse().join('/'));
+ });
+ return candidates.length===1?candidates[0]:null;
 }
-async function loadOrder(){
- const date=state.date;
- if(!date)return;
- const revision=++state.revision;state.loading=true;statusBox('Carregando a ordem salva...');
- try{
-  const data=await api('/rest/v1/hsj_mapa_ordem_impressao?select=surgery_id,surgery_date,position&order=position.asc&surgery_date=eq.'+encodeURIComponent(date)+'&limit=5000');
-  if(revision!==state.revision)return;
-  const position=new Map((data||[]).map(r=>[r.surgery_id,Number(r.position)]));
-  state.rows=currentMap().filter(x=>String(x.surgery_date).slice(0,10)===date)
-   .sort((a,b)=>(position.get(a.id)??1e9)-(position.get(b.id)??1e9)||regular(a,b))
-   .map(x=>x.id);
-  state.dirty=false;state.loaded=true;drawRows();
-  statusBox(state.rows.length?'Ordem compartilhada carregada. Ajuste e clique em Salvar ordem.':'Nenhuma cirurgia ativa programada nessa data.');
- }catch(e){state.loaded=false;state.rows=[];drawRows();statusBox('Falha ao carregar a ordem: '+e.message,true)}
- finally{if(revision===state.revision)state.loading=false}
+function addOrderToTable(table,patients,displayOrder){
+ if(table.closest('#hsjHistoricoMapaSection,#hsjMapaDiaHistorico,#hsjOrdemMapaSection'))return;
+ const head=table.querySelector('thead tr'),body=table.querySelector('tbody');
+ if(!head||!body)return;
+ const originalHeads=[...head.children].map(c=>normalized(c.textContent));
+ if(!originalHeads.some(x=>x==='procedimento')||!originalHeads.some(x=>x==='paciente'||x==='nome'))return;
+ const rows=[...body.querySelectorAll(':scope > tr')];
+ const assignments=rows.map(tr=>({tr,patient:identify(tr,table,patients)}));
+ // A row with an ambiguous identity must never receive someone else's surgical order.
+ let roomIndex=originalHeads.findIndex(x=>x==='sala');
+ if(roomIndex<0){
+  const actionIndex=originalHeads.findIndex(x=>x==='ações'||x==='acoes'||x==='ações rápidas');
+  roomIndex=actionIndex>=0?actionIndex+1:0;
+  const th=document.createElement('th');th.textContent='SALA';th.dataset.hsjOrderRoom='1';
+  head.insertBefore(th,head.children[roomIndex]||null);
+  for(const {tr,patient} of assignments){
+   const td=document.createElement('td');td.textContent=patient?.map_room||'—';
+   tr.insertBefore(td,tr.children[roomIndex]||null);
+  }
+ }
+ const th=document.createElement('th');th.textContent='ORDEM';th.className='hsj-ordem-col';
+ head.insertBefore(th,head.children[roomIndex+1]||null);
+ const valid=[];
+ for(const {tr,patient} of assignments){
+  const td=document.createElement('td');td.className='hsj-ordem-col';
+  if(patient){
+   tr.dataset.hsjOrderPatient=patient.id;
+   const rank=displayOrder.get(patient.id)||'';
+   const input=document.createElement('input');
+   input.type='number';input.min='1';input.max='9999';input.step='1';
+   input.value=String(rank);input.className='hsj-order-input';
+   input.dataset.patientId=patient.id;input.setAttribute('aria-label','Ordem da cirurgia de '+patient.patient_name+' na especialidade '+(patient.specialty||'não informada'));
+   input.title='Ordem dentro da especialidade; salva automaticamente ao alterar';
+   input.disabled=state.busy.has(patient.id)||!patient.surgery_date||!String(patient.specialty||'').trim();
+   input.onchange=()=>saveNumber(patient,input);
+   input.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();input.blur()}};
+   const printValue=document.createElement('span');printValue.className='hsj-order-print';
+   printValue.textContent=String(rank);
+   td.append(input,printValue);valid.push({tr,patient});
+  }else{
+   td.textContent='—';td.title='Registro ambíguo; confira o cadastro antes de definir ordem';
+  }
+  tr.insertBefore(td,tr.children[roomIndex+1]||null);
+ }
+ valid.sort((a,b)=>normalized(a.patient.specialty||'Não informada').localeCompare(normalized(b.patient.specialty||'Não informada'),'pt-BR')||
+ String(a.patient.surgery_date||'').localeCompare(String(b.patient.surgery_date||''))||
+ (displayOrder.get(a.patient.id)||99999)-(displayOrder.get(b.patient.id)||99999)||
+ String(a.patient.patient_name||'').localeCompare(String(b.patient.patient_name||''),'pt-BR'));
+ valid.forEach(x=>body.appendChild(x.tr));
 }
-function drawRows(){
- const root=document.getElementById('hsjOrdemTable');if(!root)return;
- const ids=new Set(state.rows),registry=new Map(currentMap().map(p=>[p.id,p]));
- if(!state.rows.length){root.innerHTML='<div class="sub" style="padding:12px">Nenhuma cirurgia encontrada para a data selecionada.</div>';return}
- root.innerHTML='<div style="overflow-x:auto"><table class="table" style="min-width:700px"><thead><tr><th>ORDEM</th><th>PACIENTE</th><th>SALA ORIGINAL</th><th>ESPECIALIDADE</th><th>MÉDICO</th><th>POSIÇÃO</th></tr></thead><tbody>'+
- state.rows.map((id,i)=>{
- const p=registry.get(id)||{};
- return '<tr><td><b>'+String(i+1)+'º</b></td><td>'+safe(p.patient_name||'Cadastro não encontrado')+'</td><td>'+safe(p.map_room||'Sem sala')+'</td><td>'+safe(p.specialty||'—')+'</td><td>'+safe(p.surgeon||'—')+'</td><td>'+
- '<button type="button" class="btn small" data-move="'+i+':-1" '+(i===0?'disabled':'')+' aria-label="Subir posição">↑</button> '+
- '<button type="button" class="btn small" data-move="'+i+':1" '+(i===state.rows.length-1?'disabled':'')+' aria-label="Descer posição">↓</button></td></tr>'
- }).join('')+'</tbody></table></div>';
- for(const btn of root.querySelectorAll('[data-move]')){
-  btn.onclick=()=>{const [index,step]=btn.dataset.move.split(':').map(Number),dest=index+step;
-   if(dest<0||dest>=state.rows.length)return;
-   [state.rows[index],state.rows[dest]]=[state.rows[dest],state.rows[index]];
-   state.dirty=true;drawRows();statusBox('Ordem alterada nesta tela. Clique em Salvar ordem para compartilhar e imprimir.');
-  };
+function applyNumbers(){
+ if(S.view!=='mapa_cirurgico')return;
+ const card=document.querySelector('#content .map-print-v11');
+ if(!card)return;
+ const obsolete=card.querySelector('#hsjOrdemMapaSection');
+ if(obsolete)obsolete.remove();
+ const patients=mapPatients();
+ const ranks=fallbackOrder();
+ for(const table of card.querySelectorAll('table')){
+  if(table.querySelector('th.hsj-ordem-col'))continue;
+  addOrderToTable(table,patients,ranks);
  }
 }
-async function saveOrder(){
- if(state.loading||!state.loaded)return alert('Carregue a lista antes de salvar.');
- if(!state.rows.length)return alert('Não há cirurgias nessa data.');
- const btn=document.getElementById('hsjOrdemSave');if(btn)btn.disabled=true;
+async function refresh(){
+ const version=++state.fetchVersion;
  try{
-  await api('/rest/v1/rpc/hsj_salvar_ordem_mapa_impressao',{method:'POST',body:JSON.stringify({p_date:state.date,p_ids:state.rows})});
-  state.dirty=false;statusBox('Ordem salva e disponível para todos os computadores.');
- }catch(e){statusBox('Não foi possível salvar: '+e.message,true);alert('A ordem não foi salva: '+e.message);}
- finally{if(btn)btn.disabled=false}
+  const records=await api('/rest/v1/hsj_mapa_ordem_impressao?select=surgery_id,surgery_date,position&order=surgery_date.asc,position.asc&limit=10000');
+  if(version!==state.fetchVersion)return;
+  const patients=new Map(mapPatients().map(p=>[p.id,p]));
+  state.positions=new Map((records||[]).filter(r=>{
+   const p=patients.get(r.surgery_id);
+   return p&&String(r.surgery_date).slice(0,10)===String(p.surgery_date).slice(0,10);
+  }).map(r=>[r.surgery_id,Number(r.position)]));
+  if(S.view==='mapa_cirurgico')applyNumbers();
+ }catch(e){console.warn('Não foi possível carregar a ordem por especialidade:',e);if(S.view==='mapa_cirurgico')applyNumbers()}
 }
-function printOrdered(){
- if(!state.loaded||!state.rows.length)return alert('Escolha uma data com cirurgias e carregue a lista.');
- if(state.dirty)return alert('Salve a ordem antes de imprimir, para garantir a mesma sequência em todos os computadores.');
- const registry=new Map(currentMap().map(p=>[p.id,p]));
- const entries=state.rows.map((id,i)=>({p:registry.get(id),n:i+1})).filter(x=>x.p);
- if(entries.length!==state.rows.length)return alert('O mapa foi atualizado. Recarregue a ordem antes de imprimir.');
- const tab=window.open('','_blank');
- if(!tab)return alert('Habilite a abertura de janelas para imprimir o mapa.');
- const rows=entries.map(({p,n})=>'<tr><td style="text-align:center"><strong>'+n+'º</strong></td><td>'+safe(p.map_room||'—')+'</td><td><b>'+safe(p.patient_name)+'</b><div class="muted">IDS: '+safe(p.ids||'—')+'</div></td><td>'+safe(p.procedure_name||'—')+'</td><td>'+safe(p.specialty||'—')+'</td><td>'+safe(p.surgeon||'—')+'</td><td>'+safe(p.map_reservations||'—')+'</td><td>'+safe(p.map_responsible||'—')+'</td></tr>').join('');
- const content='<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Mapa Cirúrgico — Ordem Geral — '+safe(formatDate(state.date))+'</title><style>'+
- '@page{size:A4 landscape;margin:10mm}*{box-sizing:border-box}body{font-family:Arial,Helvetica,sans-serif;color:#172a40;margin:14px}h1{font-size:20px;margin:0 0 5px}p{font-size:11px;margin:0 0 14px}.muted{font-size:9px;color:#606f80;margin-top:3px}table{border-collapse:collapse;width:100%;font-size:10px;table-layout:fixed}th,td{border:1px solid #b6c4d2;padding:7px 5px;text-align:left;vertical-align:top;overflow-wrap:anywhere}th{background:#e8eef5;font-size:9px}tr{break-inside:avoid}th:nth-child(1){width:6%}th:nth-child(2){width:8%}th:nth-child(3){width:18%}th:nth-child(4){width:18%}th:nth-child(5){width:12%}th:nth-child(6){width:12%}th:nth-child(7){width:17%}th:nth-child(8){width:9%}@media print{body{margin:0}}'+
- '</style></head><body><h1>Hospital São José — Mapa Cirúrgico</h1><p><b>Data:</b> '+safe(formatDate(state.date))+' &nbsp; <b>Sequência geral:</b> '+entries.length+' cirurgia(s) · Ordem independente de sala</p>'+
- '<table><thead><tr><th>ORDEM</th><th>SALA</th><th>PACIENTE / IDS</th><th>PROCEDIMENTO</th><th>ESPECIALIDADE</th><th>MÉDICO</th><th>RESERVAS / OBS.</th><th>RESPONSÁVEL</th></tr></thead><tbody>'+rows+'</tbody></table></body></html>';
- tab.document.open();tab.document.write(content);tab.document.close();tab.focus();tab.print();
+async function saveNumber(patient,input){
+ const n=Number(input.value);
+ if(!Number.isInteger(n)||n<1||n>9999){alert('Informe uma ordem numérica válida a partir de 1.');input.value=String(fallbackOrder().get(patient.id)||'');return}
+ if(state.busy.has(patient.id))return;
+ state.busy.add(patient.id);input.disabled=true;
+ try{
+  await api('/rest/v1/rpc/hsj_definir_ordem_especialidade_mapa',{method:'POST',body:JSON.stringify({p_surgery_id:patient.id,p_position:n,p_expected_updated_at:patient.updated_at})});
+  await refresh();
+  const visible=document.querySelector('#content .map-print-v11');
+  if(visible){visible.querySelectorAll('th.hsj-ordem-col').forEach(th=>th.remove());
+   for(const table of visible.querySelectorAll('table')){
+    const hdr=[...table.querySelectorAll('thead th')].map(x=>normalized(x.textContent));
+    const at=hdr.indexOf('ordem');
+    if(at>=0)for(const tr of table.querySelectorAll('tbody tr'))tr.children[at]?.remove();
+   }
+  }
+  applyNumbers();
+ }catch(e){
+  alert('Não foi possível salvar a ordem: '+e.message);
+  input.value=String(fallbackOrder().get(patient.id)||'');
+ }finally{state.busy.delete(patient.id);input.disabled=false}
 }
-function renderControls(){
- if(S.view!=='mapa_cirurgico')return;
- const root=document.querySelector('#content .map-print-v11');if(!root)return;
- let box=root.querySelector('#hsjOrdemMapaSection');
- if(box)return;
- box=document.createElement('section');box.id='hsjOrdemMapaSection';box.className='notice';
- box.style.cssText='margin:12px 0;padding:13px;border:1px solid #b5c9e1;background:#f6faff;border-radius:9px';
- box.innerHTML='<div style="display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap"><div><h3 style="margin:0 0 4px">↕ Ordem cirúrgica geral para impressão</h3><div class="sub">Defina a sequência de procedimentos independentemente da sala, sem alterar os agendamentos ou salas. Ordem salva por data.</div></div>'+
- '<div style="display:flex;flex-wrap:wrap;align-items:end;gap:6px"><label style="font-size:12px;font-weight:bold">Data do mapa<br><input type="date" id="hsjOrdemDate" style="padding:7px" value="'+safe(state.date)+'"></label>'+
- '<button type="button" class="btn" id="hsjOrdemRefresh">↻ Atualizar</button><button type="button" class="btn primary" id="hsjOrdemSave">Salvar ordem</button>'+
- '<button type="button" class="btn" id="hsjOrdemPrint">🖨 Imprimir por ordem</button></div></div>'+
- '<div id="hsjOrdemMsg" class="sub" role="status" style="margin-top:8px"></div><div id="hsjOrdemTable" style="margin-top:10px"></div>';
- const header=root.querySelector('.section-head');
- if(header)header.after(box);else root.prepend(box);
- box.querySelector('#hsjOrdemDate').onchange=e=>{
-  if(state.dirty&&!confirm('Existem mudanças não salvas. Deseja trocar a data e descartá-las?')){e.target.value=state.date;return}
-  state.date=e.target.value;state.loaded=false;state.rows=[];loadOrder();
- };
- box.querySelector('#hsjOrdemRefresh').onclick=()=>{
-  if(state.dirty&&!confirm('Descartar alterações não salvas e atualizar a lista?'))return;
-  loadOrder();
- };
- box.querySelector('#hsjOrdemSave').onclick=saveOrder;
- box.querySelector('#hsjOrdemPrint').onclick=printOrdered;
- if(state.loaded)drawRows();else loadOrder();
-}
-if(!state.date)state.date=dateDefault();
-const prevRender=window.renderMap;
+const style=document.createElement('style');style.id='hsjOrdemEspecialidadeStyle';
+style.textContent='.map-print-v11 th.hsj-ordem-col,.map-print-v11 td.hsj-ordem-col{text-align:center;min-width:70px!important;width:78px!important}.map-print-v11 .hsj-order-input{width:60px;max-width:100%;text-align:center;border:1px solid #adc2de;border-radius:5px;padding:5px 2px;background:white;font-weight:700;color:#193d66}.map-print-v11 .hsj-order-print{display:none}@media print{.map-print-v11 .hsj-order-input{display:none!important}.map-print-v11 .hsj-order-print{display:inline!important;font-weight:700}.map-print-v11 .rooms{display:none!important}.map-print-v11 .hsj-ordem-col{min-width:0!important;width:auto!important}}';
+document.head.appendChild(style);
+const previousRender=window.renderMap;
 window.renderMap=function(){
- const result=prevRender.apply(this,arguments);
- if(S.view==='mapa_cirurgico')renderControls();
+ const result=previousRender.apply(this,arguments);
+ if(S.view==='mapa_cirurgico'){applyNumbers();refresh()}
  return result;
 };
-window.hsjAbrirOrdemMapa20261105=renderControls;
-if(S.view==='mapa_cirurgico')renderControls();
+window.hsjAtualizarOrdemEspecialidade20261105=refresh;
+if(S.view==='mapa_cirurgico'){applyNumbers();refresh()}
 })();
