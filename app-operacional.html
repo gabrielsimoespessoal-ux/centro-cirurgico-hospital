@@ -399,4 +399,32 @@ f.addEventListener('load',()=>{try{const d=f.contentDocument;const inject=()=>{i
   observer.observe(doc.head,{childList:true});
  });
 })();
+</script><script>
+(function(){
+ const frame=document.getElementById('appFrame');
+ if(!frame)return;
+ frame.addEventListener('load',()=>{
+  const doc=frame.contentDocument;
+  if(!doc)return;
+  const install=()=>{
+   if(doc.querySelector('script[data-hsj-fila-search-server]'))return;
+   const s=doc.createElement('script');
+   s.dataset.hsjFilaSearchServer='1';
+   s.src='/patch-busca-fila-servidor-20261105.js?v=20261105-01';
+   s.onerror=()=>console.error('Falha ao carregar busca sincronizada da fila');
+   doc.head.appendChild(s);
+  };
+  const marker='patch-ordem-geral-impressao-mapa-20261105.js';
+  const existing=[...doc.scripts].find(s=>s.src?.includes(marker));
+  if(existing){existing.addEventListener('load',install,{once:true});if(doc.defaultView?.__hsjOrdemGeralMapa20261105)install();return}
+  const obs=new MutationObserver(records=>{
+   for(const r of records)for(const node of r.addedNodes){
+    if(node?.tagName==='SCRIPT'&&node.src?.includes(marker)){
+     obs.disconnect();node.addEventListener('load',install,{once:true});return;
+    }
+   }
+  });
+  obs.observe(doc.head,{childList:true});
+ });
+})();
 </script></body></html>
