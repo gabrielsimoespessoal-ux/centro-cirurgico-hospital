@@ -10,7 +10,7 @@ const dateBR=s=>{const t=String(s||'').slice(0,10);return /^\d{4}-\d{2}-\d{2}$/.
 function openSuspension(id){
  const x=(S.rows||[]).find(p=>String(p.id)===String(id));
  if(!x)return alert('Paciente não encontrado. Atualize o mapa.');
- if(x.stage!=='mapa_cirurgico')return alert('Paciente não está mais no mapa cirúrgico. Atualize a tela.');
+ if(['concluida','realizadas'].includes(x.stage))return alert('Paciente finalizado. Confira o cadastro antes de registrar a suspensão.');
  const html='<div class="back"><div class="modal" style="max-width:700px"><div class="mh"><b>⚠ Registrar cirurgia suspensa</b><button class="btn" type="button" onclick="document.getElementById(\'modal\').innerHTML=\'\'">Fechar</button></div>'+
  '<div class="mb"><div class="notice"><b>'+safe(x.patient_name)+'</b><div>Cirurgia: '+safe(dateBR(x.surgery_date))+' · '+safe(x.procedure_name||'')+'</div><small>O motivo e a equipe de monitoramento são obrigatórios. A operação só será concluída quando o encaminhamento também for salvo.</small></div>'+
  '<div class="field"><label>Motivo da suspensão *</label><textarea rows="4" id="hsjSuspReason" placeholder="Descreva objetivamente o motivo (ex.: falta de anestesista)" maxlength="2000"></textarea></div>'+
@@ -111,9 +111,8 @@ function renameSuspensionUI(){
   for(const select of modal.querySelectorAll('select')){
    for(const option of select.options){
     if(option.value==='suspensas'){
-     if(option.textContent!=='Cirurgias Suspensas (Indicadores) — somente relatório')option.textContent='Cirurgias Suspensas (Indicadores) — somente relatório';
-     option.disabled=true;
-     if(option.selected)select.value='';
+     if(option.textContent!=='Cirurgias Suspensas (Indicadores)')option.textContent='Cirurgias Suspensas (Indicadores)';
+     if(option.disabled)option.disabled=false;
     }
    }
   }
@@ -125,12 +124,14 @@ const oldChoose=window.hsjEscolherEtapaV26;
 if(typeof oldChoose==='function')window.hsjEscolherEtapaV26=function(){const result=oldChoose.apply(this,arguments);renameSuspensionUI();return result};
 const oldConfirm=window.hsjConfirmarEtapaV26;
 if(typeof oldConfirm==='function')window.hsjConfirmarEtapaV26=function(){
- if(document.getElementById('hsjStageV26')?.value==='suspensas')return alert('Cirurgias Suspensas (Indicadores) é apenas um relatório. Use a ação Cirurgia suspensa no Mapa Cirúrgico.');
+ if(document.getElementById('hsjStageV26')?.value==='suspensas'){
+   const patientId=(arguments[0]||'');return openSuspension(patientId);
+ }
  return oldConfirm.apply(this,arguments);
 };
 const oldAdminConfirm=window.hsjConcluirAdminV26;
 if(typeof oldAdminConfirm==='function')window.hsjConcluirAdminV26=function(){
- if(document.getElementById('hsjAdminReturnV26')?.value==='suspensas')return alert('A aba Cirurgias Suspensas (Indicadores) não recebe pacientes.');
+ if(document.getElementById('hsjAdminReturnV26')?.value==='suspensas')return alert('Para registrar uma suspensão, use Escolher etapa e selecione Cirurgias Suspensas (Indicadores), com motivo e monitoramento obrigatórios.');
  return oldAdminConfirm.apply(this,arguments);
 };
 const modalTarget=document.getElementById('modal');
