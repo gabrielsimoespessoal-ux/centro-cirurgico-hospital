@@ -370,4 +370,33 @@ f.addEventListener('load',()=>{try{const d=f.contentDocument;const inject=()=>{i
   obs.observe(doc.head,{childList:true});
  });
 })();
+</script><script>
+(function(){
+ const frame=document.getElementById('appFrame');
+ if(!frame)return;
+ frame.addEventListener('load',()=>{
+  const doc=frame.contentDocument;if(!doc)return;
+  let installed=false;
+  function install(){
+   if(installed||doc.querySelector('script[data-hsj-ordem-geral-mapa]'))return;
+   installed=true;
+   const s=doc.createElement('script');
+   s.dataset.hsjOrdemGeralMapa='1';
+   s.src='/patch-ordem-geral-impressao-mapa-20261105.js?v=20261105-01';
+   s.onerror=()=>console.error('Não foi possível carregar a ordem geral do Mapa Cirúrgico');
+   doc.head.appendChild(s);
+  }
+  const marker='patch-cirurgias-suspensas-monitoramento-20261105.js';
+  const prior=[...doc.scripts].find(s=>s.src?.includes(marker));
+  if(prior){prior.addEventListener('load',install,{once:true});if(doc.defaultView?.__hsjSuspensaoMapaObrigatoria20261105)install();return}
+  const observer=new MutationObserver(items=>{
+   for(const rec of items)for(const node of rec.addedNodes){
+    if(node?.tagName==='SCRIPT'&&node.src?.includes(marker)){
+     observer.disconnect();node.addEventListener('load',install,{once:true});return;
+    }
+   }
+  });
+  observer.observe(doc.head,{childList:true});
+ });
+})();
 </script></body></html>
