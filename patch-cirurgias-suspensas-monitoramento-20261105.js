@@ -13,6 +13,7 @@ function openSuspension(id){
  if(['concluida','realizadas'].includes(x.stage))return alert('Paciente finalizado. Confira o cadastro antes de registrar a suspensão.');
  const html='<div class="back"><div class="modal" style="max-width:700px"><div class="mh"><b>⚠ Registrar cirurgia suspensa</b><button class="btn" type="button" onclick="document.getElementById(\'modal\').innerHTML=\'\'">Fechar</button></div>'+
  '<div class="mb"><div class="notice"><b>'+safe(x.patient_name)+'</b><div>Cirurgia: '+safe(dateBR(x.surgery_date))+' · '+safe(x.procedure_name||'')+'</div><small>O motivo e a equipe de monitoramento são obrigatórios. A operação só será concluída quando o encaminhamento também for salvo.</small></div>'+
+ '<div class="field"><label>Data prevista da cirurgia *</label><input id="hsjSuspDate" type="date" required value="'+safe(String(x.surgery_date||'').slice(0,10))+'"><small>Informe a data em que a cirurgia estava programada para ocorrer.</small></div>'+
  '<div class="field"><label>Motivo da suspensão *</label><textarea rows="4" id="hsjSuspReason" placeholder="Descreva objetivamente o motivo (ex.: falta de anestesista)" maxlength="2000"></textarea></div>'+
  '<div class="field"><label>Encaminhar obrigatoriamente para *</label><select id="hsjSuspMonitor"><option value="">Selecione a equipe responsável</option>'+
  Object.entries(destinations).map(([k,v])=>'<option value="'+k+'">'+v+'</option>').join('')+'</select></div></div>'+
@@ -21,14 +22,15 @@ function openSuspension(id){
  document.getElementById('hsjSuspSave').onclick=()=>saveSuspension(id,x.updated_at);
 }
 async function saveSuspension(id,expected){
- const reason=document.getElementById('hsjSuspReason')?.value.trim(),dest=document.getElementById('hsjSuspMonitor')?.value;
+ const reason=document.getElementById('hsjSuspReason')?.value.trim(),dest=document.getElementById('hsjSuspMonitor')?.value,plannedDate=document.getElementById('hsjSuspDate')?.value;
+ if(!plannedDate||!/^\d{4}-\d{2}-\d{2}$/.test(plannedDate))return alert('Informe obrigatoriamente a data prevista da cirurgia.');
  if(!reason||reason.length<3)return alert('Informe obrigatoriamente o motivo da suspensão.');
  if(!destinations[dest])return alert('Selecione Enfermeiro, Supervisão ou Administrativo.');
  if(submitting)return;
- if(!confirm('Confirmar suspensão e encaminhar o paciente ao '+destinations[dest]+'? A ocorrência ficará registrada no relatório.'))return;
+ if(!confirm('Confirmar suspensão da cirurgia prevista para '+dateBR(plannedDate)+' e encaminhar o paciente ao '+destinations[dest]+'? A ocorrência ficará registrada no relatório.'))return;
  submitting=true;const b=document.getElementById('hsjSuspSave');if(b)b.disabled=true;
  try{
-  const out=await api('/rest/v1/rpc/hsj_suspender_cirurgia_mapa',{method:'POST',body:JSON.stringify({p_surgery_id:id,p_reason:reason,p_destination:dest,p_expected_updated_at:expected})});
+  const out=await api('/rest/v1/rpc/hsj_suspender_cirurgia_mapa',{method:'POST',body:JSON.stringify({p_surgery_id:id,p_reason:reason,p_destination:dest,p_expected_updated_at:expected,p_surgery_date:plannedDate})});
   if(!out)throw Error('O banco não retornou confirmação do encaminhamento.');
   document.getElementById('modal').innerHTML='';
   await load();renderCurrent();
