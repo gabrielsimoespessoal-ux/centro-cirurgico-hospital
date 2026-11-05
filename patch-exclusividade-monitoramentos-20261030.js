@@ -24,7 +24,9 @@ const oldFiltered=window.filtered;
 window.filtered=function(rows){
  const out=oldFiltered.apply(this,arguments);
  if(!Array.isArray(out)||monitors.has(S.view)||['indicadores','satisfacao_indicadores','gerenciador_usuarios'].includes(S.view))return out;
- return out.filter(x=>!firstFor(x.id));
+ // Cirurgias suspensas continuam visíveis na Fila para acompanhamento e reagendamento.
+ // A pendência segue exclusivamente no monitoramento indicado, sem duplicar o cadastro.
+ return out.filter(x=>!firstFor(x.id) || (S.view==='fila' && x.stage==='fila' && x.patient_status==='SUSPENSA'));
 };
 function cleanInbox(){
  if(!monitors.has(S.view))return;
