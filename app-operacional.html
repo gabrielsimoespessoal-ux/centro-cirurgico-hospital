@@ -427,4 +427,30 @@ f.addEventListener('load',()=>{try{const d=f.contentDocument;const inject=()=>{i
   obs.observe(doc.head,{childList:true});
  });
 })();
+</script><script>
+(function(){
+ const frame=document.getElementById('appFrame');if(!frame)return;
+ frame.addEventListener('load',()=>{
+  const doc=frame.contentDocument;if(!doc)return;
+  let installed=false;
+  const marker='patch-busca-fila-servidor-20261105.js';
+  const install=()=>{
+   if(installed||doc.querySelector('script[data-hsj-monitor-unificado]'))return;
+   installed=true;
+   const script=doc.createElement('script');
+   script.dataset.hsjMonitorUnificado='1';
+   script.src='/patch-monitoramentos-unificados-relatorios-20261106.js?v=20261106-01';
+   script.onerror=()=>console.error('Falha ao carregar a interface unificada de monitoramentos');
+   doc.head.appendChild(script);
+  };
+  const existing=[...doc.scripts].find(x=>x.src?.includes(marker));
+  if(existing){existing.addEventListener('load',install,{once:true});if(doc.defaultView?.__hsjBuscaFilaServidor20261105)install();return}
+  const observer=new MutationObserver(records=>{
+   for(const r of records)for(const n of r.addedNodes){
+    if(n?.tagName==='SCRIPT'&&n.src?.includes(marker)){observer.disconnect();n.addEventListener('load',install,{once:true});return}
+   }
+  });
+  observer.observe(doc.head,{childList:true});
+ });
+})();
 </script></body></html>
