@@ -12,8 +12,9 @@ const date=v=>{if(!v)return '—';const d=new Date(v);return Number.isNaN(d.valu
 const dateOnly=v=>{if(!v)return '';const d=new Date(v);if(Number.isNaN(d.valueOf()))return '';const parts=new Intl.DateTimeFormat('en-US',{timeZone:'America/Maceio',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(d);const a={};for(const part of parts)a[part.type]=part.value;return a.year+'-'+a.month+'-'+a.day};
 const viewState={};
 let cache=null,inFlight=null,seq=0;
+const patientCache=new Map();
 function state(){return viewState[S.view]||(viewState[S.view]={tab:'pending',from:'',to:'',search:''})}
-function patient(id){return (S.rows||[]).find(x=>String(x.id)===String(id))}
+function patient(id){return (S.rows||[]).find(x=>String(x.id)===String(id))||patientCache.get(String(id))}
 function normalizeRecords([sup,adm,claims,nurse]){
  const all=[
  ...(sup||[]).map(r=>({key:'sup:'+r.id,id:r.id,kind:r.destination==='avaliacao_enfermeiro'?'enfermeiro':r.destination==='monitoramento_administrativo'?'administrativo':'supervisao',patientId:r.surgery_id,created:r.created_at,completed:r.resolved_at,reason:r.reason,response:r.resolution,destination:r.return_stage,origin:r.origin_stage,status:r.status,source:'Encaminhamento Supervisão'})),
@@ -43,17 +44,15 @@ async function loadData(force=false){
     api('/rest/v1/nurse_reviews?select=*&order=reviewed_at.desc&limit=5000')
   ]);
   const rows=normalizeRecords([sup,adm,claims,nurse]);
-  const missing=[...new Set(rows.filter(r=>r.status==='aguardando'&&!patient(r.patientId)).map(r=>r.patientId))];
-  if(missing.length){
-   for(let offset=0;offset<missing.length;offset+=50){
-    try{
-     const ids=missing.slice(offset,offset+50);
-     const found=await api('/rest/v1/surgeries?select=*&id=in.('+ids.map(encodeURIComponent).join(',')+')');
-     const index=new Map((S.rows||[]).map(p=>[String(p.id),p]));
-     for(const p of found||[])index.set(String(p.id),p);
-     S.rows=[...index.values()];
-    }catch(error){console.warn('Cadastro não sincronizado para monitoramento:',error)}
-   }
+  // Consultar também os cadastros históricos, inclusive inativos, sem inseri-los
+  // na lista operacional S.rows (que não deve ressuscitar pacientes encerrados).
+  const missing=[...new Set(rows.filter(r=>r.patientId&&!patient(r.patientId)).map(r=>String(r.patientId)))];
+  for(let offset=0;offset<missing.length;offset+=50){
+   try{
+    const ids=missing.slice(offset,offset+50);
+    const found=await api('/rest/v1/surgeries?select=id,patient_name,ids,cpf,specialty,surgeon,active&'+'id=in.('+ids.map(encodeURIComponent).join(',')+')');
+    for(const p of found||[])if(p.id)patientCache.set(String(p.id),p);
+   }catch(error){console.warn('Identificação histórica de monitoramento não disponível:',error)}
   }
   cache={rows,ts:Date.now()};return rows;
  })();
