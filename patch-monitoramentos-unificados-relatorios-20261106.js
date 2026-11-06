@@ -9,14 +9,14 @@ const TYPES={
 };
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const date=v=>{if(!v)return '—';const d=new Date(v);return Number.isNaN(d.valueOf())?'—':d.toLocaleString('pt-BR',{timeZone:'America/Maceio',dateStyle:'short',timeStyle:'short'})};
-const dateOnly=v=>{if(!v)return '';const d=new Date(v);if(Number.isNaN(d.valueOf()))return '';return new Intl.DateTimeFormat('en-CA',{timeZone:'America/Maceio',year:'numeric',month:'2-digit',day:'2-digit'}).format(d).split('/').reverse().join('-')};
+const dateOnly=v=>{if(!v)return '';const d=new Date(v);if(Number.isNaN(d.valueOf()))return '';const parts=new Intl.DateTimeFormat('en-US',{timeZone:'America/Maceio',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(d);const a={};for(const part of parts)a[part.type]=part.value;return a.year+'-'+a.month+'-'+a.day};
 const viewState={};
 let cache=null,inFlight=null,seq=0;
 function state(){return viewState[S.view]||(viewState[S.view]={tab:'pending',from:'',to:'',search:''})}
 function patient(id){return (S.rows||[]).find(x=>String(x.id)===String(id))}
 function normalizeRecords([sup,adm,claims,nurse]){
  const all=[
- ...(sup||[]).map(r=>({key:'sup:'+r.id,id:r.id,kind:'supervisao',patientId:r.surgery_id,created:r.created_at,completed:r.resolved_at,reason:r.reason,response:r.resolution,destination:r.return_stage,origin:r.origin_stage,status:r.status,source:'Encaminhamento Supervisão'})),
+ ...(sup||[]).map(r=>({key:'sup:'+r.id,id:r.id,kind:r.destination==='avaliacao_enfermeiro'?'enfermeiro':r.destination==='monitoramento_administrativo'?'administrativo':'supervisao',patientId:r.surgery_id,created:r.created_at,completed:r.resolved_at,reason:r.reason,response:r.resolution,destination:r.return_stage,origin:r.origin_stage,status:r.status,source:'Encaminhamento Supervisão'})),
  ...(adm||[]).map(r=>({key:'adm:'+r.id,id:r.id,kind:'administrativo',patientId:r.surgery_id,created:r.created_at,completed:r.resolved_at,reason:r.reason,response:r.resolution,destination:r.return_stage,origin:r.origin_stage,status:r.status,source:'Encaminhamento Administrativo'})),
  ...(claims||[]).map(r=>({key:'claim:'+r.id,id:r.id,kind:r.monitor_type==='monitoramento_administrativo'?'administrativo':r.monitor_type,patientId:r.surgery_id,created:r.created_at,completed:r.resolved_at,reason:r.reason,response:r.response,destination:r.destination,origin:'Solicitação direta',status:r.status,source:'Monitoramento direto'})),
  ...(nurse||[]).map(r=>({key:'nurse:'+r.id,id:r.id,kind:'enfermeiro',patientId:r.surgery_id,created:r.reviewed_at,completed:r.reviewed_at,reason:r.reason,response:[r.assessment,r.notes].filter(Boolean).join(' — '),destination:r.decision,origin:'Avaliação clínica',status:'respondido',source:'Avaliação de enfermagem',historicalOnly:true}))
