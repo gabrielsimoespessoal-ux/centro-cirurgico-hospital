@@ -9,6 +9,34 @@ const oldSearch=window.hsjPesquisarPaciente20261015;
 const searchInput=()=>document.getElementById('hsjBuscaLocal20261015');
 const output=()=>document.getElementById('hsjBuscaResultados20261015');
 function localMatch(q){return (S.rows||[]).filter(x=>x.active!==false&&[x.patient_name,x.ids,x.cpf].some(v=>norm(v).includes(q)))}
+
+function focusMapPatient(x){
+ const date=String(x.surgery_date||'').slice(0,10);
+ const filters={doctor:'',specialty:'',from:date||'',to:date||''};
+ S.mapFilters=filters;
+ S.room='all';
+ S.mapMode='daily';
+ const bar=document.createElement('div');
+ bar.id='hsjPacienteFocoMapa';
+ bar.style.cssText='padding:12px;margin:12px 0;border:2px solid #1c69b5;border-radius:9px;background:#edf6ff;display:flex;gap:12px;align-items:center;flex-wrap:wrap';
+ const data=document.createElement('div');data.style.flex='1';data.style.minWidth='220px';
+ const title=document.createElement('strong');title.textContent='Paciente localizado no Mapa Cirúrgico: '+(x.patient_name||'');
+ const sub=document.createElement('div');sub.textContent='IDS: '+(x.ids||'—')+' · Cirurgia: '+(date?date.split('-').reverse().join('/'):'sem data')+' · '+(x.map_room||'Sala não informada')+' · '+(x.patient_status||'');
+ data.append(title,sub);
+ const open=document.createElement('button');open.type='button';open.className='btn primary';
+ open.textContent='Abrir agendamento / editar mapa';open.onclick=()=>window.editMapPatient?.(x.id);
+ bar.append(data,open);
+ const root=document.querySelector('#content .map-print-v11');
+ if(!root)return;
+ const old=root.querySelector('#hsjPacienteFocoMapa');if(old)old.remove();
+ const head=root.querySelector('.section-head');
+ if(head)head.after(bar);else root.prepend(bar);
+ const rows=[...root.querySelectorAll('tbody tr')];
+ const match=rows.find(tr=>[...tr.querySelectorAll('td')].some(td=>norm(td.textContent).includes(norm(x.patient_name))));
+ if(match){match.style.outline='3px solid #1967be';match.style.outlineOffset='-3px'}
+ bar.scrollIntoView({behavior:'smooth',block:'center'});
+}
+
 function renderResults(matches,q){
  const target=output();if(!target)return;
  target.replaceChildren();
@@ -32,10 +60,23 @@ function renderResults(matches,q){
    try{
     if(typeof window.clearGlobalFiltersV16==='function')window.clearGlobalFiltersV16();
     const destination=x.stage==='pendencias'?'fila':x.stage;
+    if(destination==='mapa_cirurgico'){
+      const scheduled=String(x.surgery_date||'').slice(0,10);
+      S.mapFilters={doctor:'',specialty:'',from:scheduled||'',to:scheduled||''};
+      S.room='all';
+      S.mapMode='daily';
+    }
     const tab=[...document.querySelectorAll('#tabs .tab')].find(el=>(el.getAttribute('onclick')||'').includes("setView('"+destination+"'"));
     if(tab&&typeof window.setView==='function')window.setView(destination,tab);
     else{S.view=destination;renderTabs();renderCurrent()}
     document.querySelectorAll('#tabs .tab').forEach(el=>el.classList.toggle('on',(el.getAttribute('onclick')||'').includes("setView('"+destination+"'")));
+    if(destination==='mapa_cirurgico'){
+      // Se o paciente estiver agendado em outra data, abrir o mapa nessa data
+      // e oferecer imediatamente a edição do cadastro original.
+      focusMapPatient(x);
+      if(typeof window.editMapPatient==='function')window.editMapPatient(x.id);
+      return;
+    }
     if(S.view==='fila'&&typeof window.setFilaRevalidationV15==='function')window.setFilaRevalidationV15('');
     if(S.view==='fila'){
       if(typeof window.clearGlobalFiltersV16==='function')window.clearGlobalFiltersV16();
