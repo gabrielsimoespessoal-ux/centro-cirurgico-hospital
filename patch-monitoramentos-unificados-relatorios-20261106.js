@@ -127,14 +127,45 @@ function openNote(r){
   finally{savingNote=false;if(btn?.isConnected)btn.disabled=false}
  };
 }
-function drawTable(rows,treated){
- const head='<div class="tablewrap"><table class="table" style="min-width:850px"><thead><tr><th>Paciente</th><th>Especialidade / médico</th><th>Origem</th><th>Motivo</th><th>'+(treated?'Resposta / tratativa':'Recebido')+'</th><th>'+(treated?'Tratado em / destino':'Ação')+'</th></tr></thead><tbody>';
- const body=rows.map(r=>{
-  const p=patient(r.patientId);const name=p?.patient_name||'Cadastro não carregado';
-  return '<tr><td><b>'+esc(name)+'</b><div class="sub">IDS: '+esc(p?.ids||'—')+'</div></td><td>'+esc(p?.specialty||'—')+'<div class="sub">'+esc(p?.surgeon||'—')+'</div></td><td>'+esc(r.source)+'</td><td style="white-space:pre-wrap;overflow-wrap:anywhere">'+esc(r.reason||'—')+'</td><td style="white-space:pre-wrap;overflow-wrap:anywhere">'+(treated?esc(r.response||'Sem resposta documentada'):esc(date(r.created))+noteHistory(r))+'</td><td>'+(treated?esc(date(r.completed||r.created))+'<div class="sub">'+esc(labels[r.destination]||r.destination||'—')+'</div>' :'<button type="button" class="btn small" data-hsj-note="'+esc(r.key)+'">Só responder</button> <button type="button" class="btn primary small" data-hsj-answer="'+esc(r.key)+'">Responder / encaminhar</button>')+(p?'<div><button type="button" class="btn small" data-hsj-consult="'+esc(p.id)+'">Consultar cadastro</button></div>':'<div class="sub">Registro vinculado ao banco; atualize para localizar o cadastro</div>')+'</td></tr>';
- }).join('');
- return head+(body||'<tr><td colspan="6" style="text-align:center;padding:24px">Nenhum '+(treated?'atendimento concluído':'monitoramento pendente')+' no filtro.</td></tr>')+'</tbody></table></div>';
+async function consultPatient(id){
+ const modal=document.getElementById('modal');
+ if(!modal)return alert('Janela de consulta indisponível.');
+ let p=patient(id);
+ if(!p || !p.phone){
+  try{
+   const rows=await api('/rest/v1/surgeries?select=*&id=eq.'+encodeURIComponent(id)+'&limit=1');
+   if(rows?.[0]){p=rows[0];patientCache.set(String(p.id),p)}
+  }catch(err){if(!p)return alert('Não foi possível consultar cadastro no banco: '+err.message)}
+ }
+ if(!p)return alert('Cadastro não localizado no banco. O encaminhamento permanece salvo.');
+ const fields=[
+  ['Nome',p.patient_name],['IDS',p.ids],['CPF',p.cpf],['Contato',p.phone],
+  ['Especialidade',p.specialty],['Médico',p.surgeon],['Procedimento',p.procedure_name],
+  ['Etapa atual',labels[p.stage]||p.stage],['Situação',p.patient_status],
+  ['Data da cirurgia',p.surgery_date],['Observações',p.suspension_notes]
+ ];
+ modal.innerHTML='<div class="back"><div class="modal" style="max-width:820px"><div class="mh"><b>Consultar cadastro — '+esc(p.patient_name||'Paciente')+'</b><button class="btn" type="button" id="hsjConsultClose">Fechar</button></div><div class="mb"><div class="notice">Consulta somente leitura; os dados não serão alterados.</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px">'+fields.map(([k,v])=>'<div style="padding:9px;border:1px solid #d6e2ee;border-radius:6px"><b>'+esc(k)+'</b><div style="overflow-wrap:anywhere">'+esc(v??'—')+'</div></div>').join('')+'</div></div></div></div>';
+ modal.querySelector('#hsjConsultClose').onclick=()=>modal.innerHTML='';
 }
+function drawTable(rows,treated){
+ const body=rows.map(r=>{
+  const p=patient(r.patientId),name=p?.patient_name||'Cadastro não carregado';
+  return '<article class="hsj-mon-card" data-record="'+esc(r.key)+'">'+
+   '<div class="hsj-mon-person"><strong>'+esc(name)+'</strong><small>IDS: '+esc(p?.ids||'—')+'</small>'+
+   '<small>'+esc(p?.specialty||'Especialidade não informada')+' · '+esc(p?.surgeon||'Médico não informado')+'</small></div>'+
+   '<div class="hsj-mon-description"><small>'+esc(r.source)+' · '+esc(date(r.created))+'</small>'+
+   '<div><b>Motivo:</b> '+esc(r.reason||'—')+'</div>'+
+   (treated?'<div><b>Resposta:</b> '+esc(r.response||'Sem resposta documentada')+'</div><div><b>Concluído:</b> '+esc(date(r.completed))+' · '+esc(labels[r.destination]||r.destination||'Sem encaminhamento')+'</div>':'')+
+   noteHistory(r)+'</div>'+
+   '<div class="hsj-mon-actions">'+(treated?'':'<button type="button" class="btn small" data-hsj-note="'+esc(r.key)+'">Só responder</button><button type="button" class="btn primary small" data-hsj-answer="'+esc(r.key)+'">Responder / encaminhar</button>')+
+   '<button type="button" class="btn small" data-hsj-consult="'+esc(r.patientId)+'">Consultar cadastro</button></div></article>';
+ }).join('');
+ return '<div class="hsj-mon-list">'+(body||'<div class="notice">Nenhum '+(treated?'atendimento concluído':'monitoramento pendente')+' no filtro.</div>')+'</div>';
+}
+const simplifiedCss=document.createElement('style');
+simplifiedCss.id='hsjMonitorLayout20261106';
+simplifiedCss.textContent='#hsjMonitorSimplificado .hsj-mon-list{display:grid;gap:10px}#hsjMonitorSimplificado .hsj-mon-card{display:grid;grid-template-columns:minmax(170px,1.1fr) minmax(260px,2.6fr) minmax(170px,1fr);gap:12px;align-items:start;border:1px solid #cbd8e7;border-radius:9px;padding:13px;background:#fff;overflow:visible}#hsjMonitorSimplificado .hsj-mon-person,#hsjMonitorSimplificado .hsj-mon-description,#hsjMonitorSimplificado .hsj-mon-actions{min-width:0;overflow-wrap:anywhere}#hsjMonitorSimplificado .hsj-mon-person small,#hsjMonitorSimplificado .hsj-mon-description small{display:block;color:#51677f;font-size:11px;margin-top:4px}#hsjMonitorSimplificado .hsj-mon-description{white-space:pre-wrap;line-height:1.45}#hsjMonitorSimplificado .hsj-mon-actions{display:grid;gap:6px}#hsjMonitorSimplificado .hsj-mon-actions button{width:100%;white-space:normal;min-height:33px}#hsjMonitorSimplificado .hsj-mon-card:nth-child(even){background:#f7faff}@media(max-width:1000px){#hsjMonitorSimplificado .hsj-mon-card{grid-template-columns:minmax(150px,1fr) minmax(180px,2fr)}#hsjMonitorSimplificado .hsj-mon-actions{grid-column:1/-1;display:flex;flex-wrap:wrap}#hsjMonitorSimplificado .hsj-mon-actions button{width:auto;min-width:125px}}@media(max-width:640px){#hsjMonitorSimplificado .hsj-mon-card{grid-template-columns:1fr}#hsjMonitorSimplificado .hsj-mon-actions{grid-column:auto}#hsjMonitorSimplificado .hsj-mon-actions button{flex:1}}';
+document.head.appendChild(simplifiedCss);
 function stats(all){
  const pending=all.filter(x=>x.status==='aguardando'),treated=all.filter(x=>x.status==='respondido');
  return {pending:pending.length,treated:treated.length,unique:new Set(pending.map(x=>x.patientId)).size};
@@ -170,7 +201,7 @@ function renderUI(rows){
    else if(r.key.startsWith('adm:'))window.hsjResponderAdminV26?.(id);
   };
  }
- for(const b of root.querySelectorAll('[data-hsj-consult]'))b.onclick=()=>window.hsjConsultarCadastroV24?.(b.dataset.hsjConsult);
+ for(const b of root.querySelectorAll('[data-hsj-consult]'))b.onclick=()=>consultPatient(b.dataset.hsjConsult);
  if(treated){root.querySelector('#hsjMonCsv').onclick=()=>exportCsv(listed,view);root.querySelector('#hsjMonPrint').onclick=()=>printReport(listed,view)}
 }
 function csvCell(v){const t=String(v??'').replace(/"/g,'""');return '"'+t+'"'}
