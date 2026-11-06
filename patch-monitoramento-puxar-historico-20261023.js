@@ -4,7 +4,24 @@ const kinds={avaliacao_enfermeiro:'enfermeiro',supervisao:'supervisao',monitoram
 const names={enfermeiro:'Enfermeiro',supervisao:'Supervisão',administrativo:'Administrativo'};
 const targets=['fila','pendencias','consulta_preop','exames','recebimento_nir','programacao','entrevista_tecnico','avaliacao_enfermeiro','mapa_cirurgico','pos_operatorio'];
 let claims=[];
-async function reload(){try{claims=await api('/rest/v1/monitoring_claims_hsj?select=*&order=created_at.desc&limit=5000')}catch(e){console.warn('Monitoramento novo',e);claims=[]}}
+async function reload(){
+ try{
+  claims=await api('/rest/v1/monitoring_claims_hsj?select=*&order=created_at.desc&limit=5000');
+  // Alguns encaminhamentos têm paciente ativo no banco mas ausente da lista carregada.
+  // Busca apenas os cadastros faltantes, sem modificar ou duplicar registros clínicos.
+  const known=new Set((S.rows||[]).map(x=>String(x.id)));
+  const ids=[...new Set((claims||[]).filter(r=>r.monitor_type==='enfermeiro'&&r.status==='aguardando'&&!known.has(String(r.surgery_id))).map(r=>r.surgery_id))];
+  if(ids.length){
+   try{
+    const found=await api('/rest/v1/surgeries?select=*&id=in.('+ids.map(encodeURIComponent).join(',')+')&limit=200');
+    const byId=new Map((S.rows||[]).map(x=>[String(x.id),x]));
+    for(const x of (found||[]))if(x.id)byId.set(String(x.id),x);
+    S.rows=[...byId.values()];
+   }catch(error){console.warn('Monitoramento: cadastro ainda não sincronizado',error)}
+  }
+ }catch(e){console.warn('Monitoramento novo',e);claims=[]}
+}
+window.hsjGetClaimsEnfermeiro20261106=()=>claims.filter(r=>r.monitor_type==='enfermeiro'&&r.status==='aguardando');
 const oldLoad=window.load;window.load=async function(){const r=await oldLoad.apply(this,arguments);await reload();return r};
 function renderClaims(){const type=kinds[S.view];if(!type)return;const c=document.getElementById('content');if(!c)return;const section=document.createElement('section');section.className='card';section.innerHTML='<div class="section-head"><div><h2>📥 Monitoramento — '+names[type]+'</h2><div class="sub">Somente demandas pendentes. As respondidas permanecem no histórico do cadastro.</div></div><button class="btn primary" onclick="hsjPullMonitor(\''+type+'\')">↩ Puxar monitoramento</button></div><div class="tablewrap"><table class="table"><thead><tr><th>Paciente</th><th>Motivo</th><th>Recebido</th><th>Ações</th></tr></thead><tbody>'+claims.filter(r=>r.monitor_type===type&&r.status==='aguardando').map(r=>{const x=S.rows.find(x=>x.id===r.surgery_id);return '<tr><td>'+safe(x?.patient_name||'Atendimento não localizado')+'</td><td>'+safe(r.reason)+'</td><td>'+safe(new Date(r.created_at).toLocaleString('pt-BR'))+'</td><td><button class="btn primary small" onclick="hsjRespondClaim(\''+r.id+'\')">Responder e encaminhar</button> <button class="btn small" onclick="hsjMonitorHistory(\''+r.surgery_id+'\')">Histórico</button></td></tr>'}).join('')+'</tbody></table></div>';c.prepend(section)}
 window.hsjPullMonitor=function(type){const choices=S.rows.filter(x=>x.active&&x.stage!=='concluida');document.getElementById('modal').innerHTML='<div class="back"><div class="modal"><div class="mh"><b>↩ Puxar monitoramento — '+safe(names[type])+'</b><button class="btn" onclick="document.getElementById(\'modal\').innerHTML=\'\'">Fechar</button></div><div class="mb"><div class="field"><label>Buscar paciente por nome, CPF ou IDS</label><input id="hsjClaimSearch" placeholder="Digite para localizar" oninput="hsjSearchClaim()"></div><div id="hsjClaimMatches"></div><div class="field"><label>Motivo de puxar o monitoramento *</label><textarea id="hsjClaimReason" rows="3"></textarea></div><input type="hidden" id="hsjClaimId"></div><div class="mf"><button class="btn primary" onclick="hsjCreateClaim(\''+type+'\')">Registrar monitoramento</button></div></div></div>';window.hsjSearchClaim()};
