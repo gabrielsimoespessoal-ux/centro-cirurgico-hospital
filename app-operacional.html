@@ -410,7 +410,7 @@ f.addEventListener('load',()=>{try{const d=f.contentDocument;const inject=()=>{i
    if(doc.querySelector('script[data-hsj-fila-search-server]'))return;
    const s=doc.createElement('script');
    s.dataset.hsjFilaSearchServer='1';
-   s.src='/patch-busca-fila-servidor-20261105.js?v=20261105-02';
+   s.src='/patch-busca-fila-servidor-20261105.js?v=20261106-mapa-direto01';
    s.onerror=()=>console.error('Falha ao carregar busca sincronizada da fila');
    doc.head.appendChild(s);
   };
