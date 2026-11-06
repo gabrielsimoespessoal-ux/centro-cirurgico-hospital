@@ -101,6 +101,8 @@ function orphanButtons(){
      tr.lastElementChild?.append(btn);
     }
    }
+   // Cadastro localizado no banco: nunca oferecer Apagar em um encaminhamento válido.
+   if(found?.length)return;
    if(tr.querySelector('[data-hsj-apagar-orphan]'))return;
    const btn=document.createElement('button');btn.type='button';btn.className='btn small red';
    btn.textContent='🗑 Apagar';btn.dataset.hsjApagarOrphan='1';btn.style.margin='5px';
