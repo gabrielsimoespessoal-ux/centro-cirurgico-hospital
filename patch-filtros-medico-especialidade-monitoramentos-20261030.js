@@ -33,6 +33,8 @@ function patientFor(tr){
 function update(){
  if(!views.has(S.view))return;
  const root=document.getElementById('content');if(!root)return;
+ // A interface unificada possui suas próprias colunas e filtros. Não reescrever tabelas novas.
+ if(root.querySelector('#hsjMonitorSimplificado'))return;
  const view=S.view,stored=states[view]||(states[view]={specialty:'',surgeon:''});
  const cards=[...root.querySelectorAll('section.card')].filter(card=>card.querySelector('.table thead'));
  if(!cards.length)return;
