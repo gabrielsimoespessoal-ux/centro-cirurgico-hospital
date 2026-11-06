@@ -62,7 +62,7 @@ f.addEventListener('load',()=>{try{const d=f.contentDocument;const inject=()=>{i
     if(doc.querySelector('script[data-hsj-monitor-filters-20261030]'))return;
     const script=doc.createElement('script');
     script.dataset.hsjMonitorFilters20261030='1';
-    script.src='/patch-filtros-medico-especialidade-monitoramentos-20261030.js?v=20261106-reconciliacao01';
+    script.src='/patch-filtros-medico-especialidade-monitoramentos-20261030.js?v=20261106-layout04';
     doc.head.appendChild(script);
    };
    const target='patch-relatorios-monitoramentos-20261030.js';
@@ -439,7 +439,7 @@ f.addEventListener('load',()=>{try{const d=f.contentDocument;const inject=()=>{i
    installed=true;
    const script=doc.createElement('script');
    script.dataset.hsjMonitorUnificado='1';
-   script.src='/patch-monitoramentos-unificados-relatorios-20261106.js?v=20261106-03';
+   script.src='/patch-monitoramentos-unificados-relatorios-20261106.js?v=20261106-04';
    script.onerror=()=>console.error('Falha ao carregar a interface unificada de monitoramentos');
    doc.head.appendChild(script);
   };
