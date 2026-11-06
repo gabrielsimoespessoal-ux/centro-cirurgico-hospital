@@ -147,6 +147,8 @@ async function refreshView(force){
  try{const rows=await loadData(force);if(ticket===seq&&S.view===view)renderUI(rows)}
  catch(e){if(ticket===seq&&S.view===view){target.innerHTML='<section class="card"><h2>Não foi possível carregar monitoramentos</h2><p>'+esc(e.message)+'</p><button class="btn" id="hsjMonRetry">Tentar novamente</button></section>';target.querySelector('#hsjMonRetry').onclick=()=>refreshView(true)}}
 }
+const priorLoad=window.load;
+window.load=async function(){const result=await priorLoad.apply(this,arguments);cache=null;return result};
 const previous=window.renderCurrent;
 window.renderCurrent=function(){if(!TYPES[S.view])return previous.apply(this,arguments);return refreshView(false)};
 if(TYPES[S.view])refreshView(false);
