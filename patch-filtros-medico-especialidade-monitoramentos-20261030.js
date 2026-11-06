@@ -49,6 +49,8 @@ function update(){
   }
   rows.forEach(tr=>{
    if(!tr.querySelector('td'))return;
+   // Não contabilizar como paciente a linha informativa de uma tabela vazia.
+   if(tr.querySelector('td[colspan]')||/nenhum paciente|nenhum registro/i.test(tr.textContent||'')&&!tr.querySelector('button'))return;
    const p=patientFor(tr);
    const spec=String(p?.specialty||'').trim(),doctor=String(p?.surgeon||'').trim();
    let td1=tr.querySelector('td[data-hsj-specialty]'),td2=tr.querySelector('td[data-hsj-doctor]');
@@ -78,9 +80,9 @@ function update(){
  function apply(){
   let shown=0;
   data.forEach(x=>{const yes=(!stored.specialty||x.spec===stored.specialty)&&(!stored.surgeon||x.doctor===stored.surgeon);x.tr.style.display=yes?'':'none';if(yes)shown++});
-  filter.querySelector('[data-hsj-count]').textContent=shown+' de '+data.length+' registros exibidos';
+  filter.querySelector('[data-hsj-count]').textContent=shown+' de '+data.length+' encaminhamentos exibidos (todas as seções; não são pacientes únicos)';
   const select=filter.querySelector('[data-hsj-field="surgeon"]');select.innerHTML=opts(data.filter(x=>!stored.specialty||x.spec===stored.specialty).map(x=>x.doctor),stored.surgeon);
-  if(stored.surgeon&&!data.some(x=>x.doctor===stored.surgeon&&(!stored.specialty||x.spec===stored.specialty))){stored.surgeon='';select.value='';data.forEach(x=>{const yes=!stored.specialty||x.spec===stored.specialty;x.tr.style.display=yes?'':'none'});filter.querySelector('[data-hsj-count]').textContent=data.filter(x=>!stored.specialty||x.spec===stored.specialty).length+' de '+data.length+' registros exibidos'}
+  if(stored.surgeon&&!data.some(x=>x.doctor===stored.surgeon&&(!stored.specialty||x.spec===stored.specialty))){stored.surgeon='';select.value='';data.forEach(x=>{const yes=!stored.specialty||x.spec===stored.specialty;x.tr.style.display=yes?'':'none'});filter.querySelector('[data-hsj-count]').textContent=data.filter(x=>!stored.specialty||x.spec===stored.specialty).length+' de '+data.length+' encaminhamentos exibidos (não são pacientes únicos)'}
  }
  applyOptions();apply();
 }
