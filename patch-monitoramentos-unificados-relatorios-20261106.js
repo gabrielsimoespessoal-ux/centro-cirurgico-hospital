@@ -175,7 +175,7 @@ function renderUI(rows){
 }
 function csvCell(v){const t=String(v??'').replace(/"/g,'""');return '"'+t+'"'}
 function reportValues(list){
- return list.map(r=>{const p=patient(r.patientId);return [p?.patient_name||'Cadastro não carregado',p?.ids||'',p?.specialty||'',p?.surgeon||'',r.source,r.reason,r.response,r.created,r.completed,r.destination]});
+ return list.map(r=>{const p=patient(r.patientId);return [p?.patient_name||'Cadastro não carregado',p?.ids||'',p?.specialty||'',p?.surgeon||'',r.source,r.reason,r.response,r.created,r.completed,r.destination,notesOf(r).map(n=>date(n.created_at)+' - '+(NOTE_TYPES[n.outcome]||n.outcome)+': '+n.note+(n.completed_without_transfer?' [concluído sem encaminhar]':' [mantido pendente]')).join(' | ')]});
 }
 function exportCsv(list,view){
  const headers=['Paciente','IDS','Especialidade','Médico','Origem','Motivo','Resposta / tratativa','Recebido em','Tratado em','Destino','Histórico de respostas e tentativas'];
@@ -186,7 +186,7 @@ function exportCsv(list,view){
 function printReport(list,view){
  const w=window.open('','_blank');if(!w)return alert('Habilite janelas para imprimir.');
  const s=state(),unique=new Set(list.map(r=>r.patientId)).size;
- const line=list.map(r=>{const p=patient(r.patientId);return '<tr><td>'+esc(p?.patient_name||'Cadastro não carregado')+'<div>'+esc(p?.ids||'')+'</div></td><td>'+esc(p?.specialty||'—')+'</td><td>'+esc(r.source)+'</td><td>'+esc(r.reason||'—')+'</td><td>'+esc(r.response||'Sem resposta documentada')+noteHistory(r)+'</td><td>'+esc(date(r.completed||r.created))+'</td><td>'+esc(labels[r.destination]||r.destination||'—')+'</td></tr>'}).join('');
+ const line=list.map(r=>{const p=patient(r.patientId);const notes=notesOf(r).map(n=>'<p><b>'+esc(date(n.created_at))+' — '+esc(NOTE_TYPES[n.outcome]||n.outcome)+'</b>: '+esc(n.note)+'</p>').join('');return '<tr><td>'+esc(p?.patient_name||'Cadastro não carregado')+'<div>'+esc(p?.ids||'')+'</div></td><td>'+esc(p?.specialty||'—')+'</td><td>'+esc(r.source)+'</td><td>'+esc(r.reason||'—')+'</td><td>'+esc(r.response||'Sem resposta documentada')+notes+'</td><td>'+esc(date(r.completed||r.created))+'</td><td>'+esc(labels[r.destination]||r.destination||'—')+'</td></tr>'}).join('');
  const css='@page{size:A4 landscape;margin:10mm}body{font:11px Arial;color:#1b2b42}h1{font-size:19px}p{color:#41556e}table{width:100%;border-collapse:collapse;table-layout:fixed}th,td{border:1px solid #b9c9d8;padding:7px;vertical-align:top;overflow-wrap:anywhere;white-space:pre-wrap}th{background:#e8eef7;text-align:left}thead{display:table-header-group}tr{break-inside:avoid}@media print{button{display:none}}';
  w.document.write('<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Relatórios de pacientes tratados — '+esc(TYPES[view].title)+'</title><style>'+css+'</style></head><body><h1>Hospital São José — '+esc(TYPES[view].title)+'</h1><h2>Relatório de respostas e tratativas concluídas</h2><p>Filtro: '+esc(s.from||'Início')+' a '+esc(s.to||'atual')+' · Tratativas concluídas: <b>'+list.length+'</b> · Pacientes únicos: <b>'+unique+'</b></p><button onclick="window.print()">Imprimir / PDF</button><table><thead><tr><th>Paciente / IDS</th><th>Especialidade</th><th>Origem</th><th>Motivo</th><th>Resposta / tratativa</th><th>Data da resposta</th><th>Destino</th></tr></thead><tbody>'+line+'</tbody></table></body></html>');w.document.close();w.focus();w.print();
 }
