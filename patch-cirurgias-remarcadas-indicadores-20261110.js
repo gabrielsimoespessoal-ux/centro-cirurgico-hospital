@@ -11,7 +11,7 @@ function field(id,label,type='text',extra=''){return '<label class="field"><span
 function selectOptions(values,placeholder='Selecione...'){return '<option value="">'+esc(placeholder)+'</option>'+values.map(v=>'<option value="'+esc(v)+'">'+esc(v)+'</option>').join('')}
 function currentToken(){return window.token||localStorage.getItem('sb_access_token')||''}
 async function request(path,options={}){
- let r=await fetch(window.URL?String(window.URL)+path:'https://uulsxmdycbihwkbftcdv.supabase.co'+path,{
+ let r=await fetch('https://uulsxmdycbihwkbftcdv.supabase.co'+path,{
  ...options,headers:{apikey:window.KEY||'sb_publishable_odmXzemIQZwx1BxrJiUYnQ_iZfPVHlV',Authorization:'Bearer '+currentToken(),'Content-Type':'application/json',...(options.headers||{})}
  });
  if(!r.ok){let x='';try{const z=await r.json();x=z.message||z.error||z.details||JSON.stringify(z)}catch{}throw Error(x||'Erro '+r.status)}
@@ -31,14 +31,14 @@ async function read(){
   }
   entries=all;
  }catch(e){lastError=e.message||String(e);console.error('Cirurgias remarcadas',e)}
- finally{loading=false;if(window.S?.view===VIEW)draw()}
+ finally{loading=false;if(S?.view===VIEW)draw()}
 }
 function matches(x){return (!filterStart||x.data_original>=filterStart)&&(!filterEnd||x.data_original<=filterEnd)&&(!filterReason||x.motivo===filterReason)&&(!filterName||[x.paciente_nome,x.paciente_ids,x.procedimento,x.medico_cirurgiao].join(' ').toLowerCase().includes(filterName))}
 const visible=()=>entries.filter(matches);
 function fmtDate(v){if(!v)return 'Não informada';const p=String(v).split('-');return p.length===3?p[2]+'/'+p[1]+'/'+p[0]:v}
 function daysBetween(a,b){if(!a||!b)return null;return Math.round((new Date(b+'T12:00:00')-new Date(a+'T12:00:00'))/86400000)}
 function draw(){
- if(window.S?.view!==VIEW)return;
+ if(S?.view!==VIEW)return;
  const e=content();if(!e)return;
  const list=visible();
  const related=list.filter(x=>['Falta de anestesista','Tempo cirúrgico'].includes(x.motivo)).length;
@@ -58,11 +58,11 @@ function exportCsv(){
  for(const x of visible())rows.push([x.data_original,x.data_remarcada,x.paciente_nome,x.paciente_ids,x.paciente_cpf,x.procedimento,x.especialidade,x.medico_cirurgiao,x.motivo,x.motivo_outro,x.observacoes,x.registrado_em,x.registrado_por]);
  if(typeof window.downloadCsv==='function'){window.downloadCsv('indicadores_cirurgias_remarcadas.csv',rows);return}
  const csv='\ufeff'+rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(';')).join('\r\n');
- const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download='cirurgias_remarcadas.csv';a.click();URL.revokeObjectURL(a.href);
+ const a=document.createElement('a');a.href=window.URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download='cirurgias_remarcadas.csv';a.click();window.URL.revokeObjectURL(a.href);
 }
 function newRecord(){
  const m=document.getElementById('modal');if(!m)return;
- const patients=(window.S?.rows||[]).filter(x=>x.active!==false);
+ const patients=(S?.rows||[]).filter(x=>x.active!==false);
  m.innerHTML='<div class="back" id="rm-overlay"><div class="modal"><div class="mh"><div><h2 style="margin:0">Registrar cirurgia remarcada</h2><span class="sub">Indicador independente: não modifica Fila, Mapa ou Jornada Cirúrgica</span></div><button class="btn" id="rm-close">Fechar</button></div><form id="rm-form"><div class="mb"><div class="grid"><label class="field span3"><span>Buscar paciente já cadastrado (opcional)</span><input id="rm-lookup" autocomplete="off" placeholder="Nome / IDS / CPF"><select id="rm-pick" size="4" style="display:none;margin-top:6px;width:100%"></select></label>'+field('name','Nome completo do paciente *','text','required minlength="3" maxlength="200"')+field('ids','IDS / Prontuário','text')+field('cpf','CPF','text')+field('procedure','Procedimento cirúrgico *','text','required minlength="3"')+field('specialty','Especialidade','text')+field('surgeon','Médico cirurgião','text')+field('original','Data da cirurgia originalmente prevista *','date','required')+field('newdate','Nova data prevista (se definida)','date')+'<label class="field span2"><span>Motivo do reagendamento *</span><select id="rm-reason" required>'+selectOptions(MOTIVOS)+'</select></label><label class="field span3" id="rm-other-wrap" style="display:none"><span>Especifique o novo motivo *</span><input id="rm-other" maxlength="500"></label><label class="field span3"><span>Descrição / justificativa complementar</span><textarea id="rm-notes" rows="3" maxlength="2000" placeholder="Detalhes da ocorrência, contexto e providências..."></textarea></label></div><div class="notice">O cadastro registra uma ocorrência estatística. Não altera a data nem o status cirúrgico do paciente no Mapa.</div><div id="rm-message" class="sub"></div></div><div class="mf"><button type="button" class="btn" id="rm-cancel">Cancelar</button><button type="submit" class="btn primary" id="rm-save">Salvar registro do indicador</button></div></form></div></div>';
  let surgeryId=null;
  const dom=id=>document.getElementById('rm-'+id);
@@ -98,12 +98,12 @@ function newRecord(){
  };
 }
 function install(){
- if(!window.S||!document.getElementById('tabs')||typeof window.renderCurrent!=='function')return false;
+ if(!S||!document.getElementById('tabs')||typeof window.renderCurrent!=='function')return false;
  if(window.__rmInstalled)return true;window.__rmInstalled=true;
  const old=window.renderCurrent;
- window.renderCurrent=function(){if(window.S.view===VIEW){draw();return}return old.apply(this,arguments)};
+ window.renderCurrent=function(){if(S.view===VIEW){draw();return}return old.apply(this,arguments)};
  const nav=document.getElementById('tabs');
- const ensure=()=>{if(!nav.querySelector('[data-rm-nav]')){const b=document.createElement('button');b.type='button';b.className='tab';b.dataset.rmNav='1';b.textContent='↻ Cirurgias Remarcadas';b.onclick=()=>{window.S.view=VIEW;nav.querySelectorAll('.tab').forEach(el=>el.classList.remove('on'));b.classList.add('on');draw();read()};let before=[...nav.querySelectorAll('.tab')].find(x=>/Cirurgias Suspensas|Indicadores/.test(x.textContent));if(before)before.before(b);else nav.appendChild(b)}if(window.S.view===VIEW)nav.querySelector('[data-rm-nav]')?.classList.add('on')};
+ const ensure=()=>{if(!nav.querySelector('[data-rm-nav]')){const b=document.createElement('button');b.type='button';b.className='tab';b.dataset.rmNav='1';b.textContent='↻ Cirurgias Remarcadas';b.onclick=()=>{S.view=VIEW;nav.querySelectorAll('.tab').forEach(el=>el.classList.remove('on'));b.classList.add('on');draw();read()};let before=[...nav.querySelectorAll('.tab')].find(x=>/Cirurgias Suspensas|Indicadores/.test(x.textContent));if(before)before.before(b);else nav.appendChild(b)}if(S.view===VIEW)nav.querySelector('[data-rm-nav]')?.classList.add('on')};
  new MutationObserver(ensure).observe(nav,{childList:true});ensure();
  return true;
 }
