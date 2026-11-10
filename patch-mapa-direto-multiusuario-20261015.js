@@ -75,6 +75,22 @@ async function sync(){
    if(chunk.length<pageSize){complete=true;break}
   }
   if(!complete)throw Error('Paginação excedeu limite de segurança. Dados anteriores preservados.');
+  // Conferir exclusões inesperadas. Uma lista parcial nunca pode apagar da tela
+  // registros que o próprio servidor ainda considera ativos.
+  const nextIds=new Set(rows.map(x=>String(x.id)));
+  const missing=(S.rows||[]).filter(x=>x?.active!==false&&!nextIds.has(String(x.id)));
+  if(missing.length){
+   // Priorizar todos os agendamentos do Mapa, depois os demais.
+   const mapMissing=missing.filter(x=>x.stage==='mapa_cirurgico');
+   const otherMissing=missing.filter(x=>x.stage!=='mapa_cirurgico');
+   const check=[...mapMissing,...otherMissing].slice(0,300);
+   for(let i=0;i<check.length;i+=50){
+    const ids=check.slice(i,i+50).map(x=>x.id);
+    const stillActive=await api('/rest/v1/surgeries?select=id&active=eq.true&id=in.('+ids.map(encodeURIComponent).join(',')+')');
+    if(!Array.isArray(stillActive))throw Error('Conferência de integridade indisponível; lista antiga preservada.');
+    if(stillActive.length)throw Error('Sincronização parcial identificada: '+stillActive.length+' registro(s) permanecem ativos no banco. Tela anterior preservada.');
+   }
+  }
   const next=sig(rows);
   if(next===lastSignature)return;
   // Não trocar registros enquanto algum formulário está aberto.
