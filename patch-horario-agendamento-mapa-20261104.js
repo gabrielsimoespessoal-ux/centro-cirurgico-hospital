@@ -59,8 +59,15 @@ window.hsjSaveMapExtraV2=async function(id){
    scheduled_by:previous.scheduled_by||uid,
    updated_at:new Date().toISOString()
   };
-  const response=await api('/rest/v1/surgery_appointment_details?on_conflict=surgery_id',{
-   method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=representation'},body:JSON.stringify(rec)
+  // Registros existentes são atualizados sem reatribuir a autoria original.
+  // Registros novos usam o usuário autenticado como responsável técnico pelo registro.
+  const exists=Boolean(previous.surgery_id);
+  const payload={...rec};
+  if(exists){delete payload.surgery_id;delete payload.scheduled_by}
+  else{payload.scheduled_by=uid}
+  const response=await api(exists?apptPath(id):'/rest/v1/surgery_appointment_details?select=*',{
+   method:exists?'PATCH':'POST',
+   headers:{Prefer:'return=representation'},body:JSON.stringify(payload)
   });
   if(!Array.isArray(response)||response.length!==1)throw new Error('Servidor não confirmou o registro do horário.');
   records[id]=Promise.resolve(response[0]);
