@@ -55,17 +55,36 @@ window.renderCurrent=function(){
  return r;
 };
 // Sincronização de leitura entre computadores. Não substitui formulários em edição.
+// Buscar todas as páginas; a API limita linhas por resposta (até 1000 na configuração atual).
+// A substituição parcial de S.rows removia pacientes antigos, inclusive os já agendados no Mapa.
+let syncBusy=false;
 async function sync(){
- if(busy||document.hidden||document.querySelector('#modal .back'))return;
+ if(busy||syncBusy||document.hidden||document.querySelector('#modal .back'))return;
+ syncBusy=true;
  try{
-  const rows=await api('/rest/v1/surgeries?select=*&active=eq.true&order=created_at.desc&limit=5000');
-  if(!Array.isArray(rows))return;
-  const next=sig(rows);if(next===lastSignature)return;
+  const rows=[],seen=new Set(),pageSize=500,maxPages=100;
+  let complete=false;
+  for(let page=0;page<maxPages;page++){
+   const chunk=await api('/rest/v1/surgeries?select=*&active=eq.true&order=created_at.desc,id.desc&limit='+pageSize+'&offset='+(page*pageSize));
+   if(!Array.isArray(chunk))throw Error('Resposta inválida na página '+(page+1));
+   for(const row of chunk){
+    if(seen.has(row.id))continue;
+    seen.add(row.id);
+    rows.push(row);
+   }
+   if(chunk.length<pageSize){complete=true;break}
+  }
+  if(!complete)throw Error('Paginação excedeu limite de segurança. Dados anteriores preservados.');
+  const next=sig(rows);
+  if(next===lastSignature)return;
+  // Não trocar registros enquanto algum formulário está aberto.
+  if(document.querySelector('#modal .back'))return;
   lastSignature=next;
   S.rows=rows;
   if(typeof fillFilters==='function')fillFilters();
   renderCurrent();
- }catch(e){console.warn('Sincronização compartilhada indisponível:',e)}
+ }catch(e){console.warn('Sincronização compartilhada indisponível (tela preservada):',e)}
+ finally{syncBusy=false}
 }
 lastSignature=sig(S.rows);
 setInterval(sync,12000);
