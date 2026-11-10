@@ -16,7 +16,9 @@ async function request(path,options={}){
  });
  if(!r.ok){let x='';try{const z=await r.json();x=z.message||z.error||z.details||JSON.stringify(z)}catch{}throw Error(x||'Erro '+r.status)}
  if(r.status===204)return [];
- return r.json();
+ const raw=await r.text();
+ if(!raw.trim())return [];
+ try{return JSON.parse(raw)}catch{throw Error('Resposta inválida do servidor')}
 }
 async function read(){
  if(loading)return;loading=true;lastError='';
