@@ -51,8 +51,14 @@ function openForm(id,p,d){
     scheduled_by_name:by,location,instructions,
     scheduled_by:old.scheduled_by||uid,updated_at:new Date().toISOString()
    };
-   const result=await api('/rest/v1/surgery_appointment_details?on_conflict=surgery_id',{
-    method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=representation'},body:JSON.stringify(payload)});
+   // Atualizar o agendamento existente preservando scheduled_by original.
+   // Inserir apenas na primeira gravação com o ID do usuário conectado.
+   const exists=Boolean(old.surgery_id);
+   const body={...payload};
+   if(exists){delete body.surgery_id;delete body.scheduled_by}
+   else{body.scheduled_by=uid}
+   const result=await api(exists?path(id):'/rest/v1/surgery_appointment_details?select=*',{
+    method:exists?'PATCH':'POST',headers:{Prefer:'return=representation'},body:JSON.stringify(body)});
    if(!Array.isArray(result)||result.length!==1)throw Error('O servidor não confirmou o agendamento.');
    const verified=await api(path(id));
    if(verified?.length!==1||String(verified[0].scheduled_date).slice(0,10)!==date||time(verified[0].scheduled_time)!==hour)
