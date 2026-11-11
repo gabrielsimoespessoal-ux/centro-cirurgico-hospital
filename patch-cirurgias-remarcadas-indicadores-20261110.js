@@ -3,6 +3,10 @@
 // Indicador autônomo: operações somente na tabela cirurgias_remarcadas_indicadores.
 // Não altera nenhuma linha de surgeries, etapa, mapa ou contadores da jornada.
 const VIEW='remarcadas_indicadores';
+const reportStyle=document.createElement('style');
+reportStyle.id='hsj-remarcadas-only-styles';
+reportStyle.textContent='body:has(#remarcadas-relatorio) #hsjGlobalCountsV16{display:none!important}body:has(#remarcadas-relatorio) .hsj-journey-summary{display:none!important}';
+document.head.appendChild(reportStyle);
 const MOTIVOS=['Cirurgia previamente agendada que precisou ser remarcada','Paciente não sabia a data e precisou de ajuste','Falta de anestesista','Indisponibilidade de médico cirurgião','Falta de OPME','Tempo cirúrgico','Outro motivo'];
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let entries=[],loading=false,lastError='',filterStart='',filterEnd='',filterReason='',filterName='';
@@ -52,7 +56,23 @@ function draw(){
  document.getElementById('rm-new').onclick=newRecord;
  document.getElementById('rm-refresh').onclick=read;
  document.getElementById('rm-export').onclick=exportCsv;
- document.getElementById('rm-print').onclick=()=>window.print();
+ document.getElementById('rm-print').onclick=printReport;
+}
+function printReport(){
+ const list=visible();
+ const stats=[['TOTAL DE REAGENDAMENTOS',list.length],...MOTIVOS.map(m=>[m.toLocaleUpperCase('pt-BR'),list.filter(x=>x.motivo===m).length])];
+ const body=list.map(x=>'<tr><td>'+esc(fmtDate(x.data_original))+'</td><td>'+esc(fmtDate(x.data_remarcada))+'</td><td>'+esc(x.paciente_nome)+'</td><td>'+esc(x.paciente_ids||'—')+'</td><td>'+esc(x.procedimento)+'</td><td>'+esc(x.medico_cirurgiao||'—')+'</td><td>'+esc(x.motivo)+(x.motivo_outro?' — '+esc(x.motivo_outro):'')+'</td><td>'+esc(x.observacoes||'')+'</td></tr>').join('');
+ const html='<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Jordana — Cirurgias Remarcadas</title><style>@page{size:A4 landscape;margin:11mm}body{font:10px Arial,sans-serif;color:#142b47}h1{font-size:18px;color:#134678;margin:0 0 7px}.sub{font-size:10px;color:#5a6f86}.stats{display:flex;gap:7px;flex-wrap:wrap;margin:15px 0}.kpi{flex:1 1 145px;padding:8px;border:1px solid #ccd9e6;border-radius:6px}.kpi span{display:block;font-size:9px;color:#506885}.kpi strong{font-size:19px}table{width:100%;border-collapse:collapse;table-layout:fixed}th,td{border:1px solid #c9d6e2;padding:6px;vertical-align:top;overflow-wrap:anywhere}th{background:#e9f1f9;text-align:left}thead{display:table-header-group}tr{break-inside:avoid}.actions{margin-bottom:12px}@media print{.actions{display:none}}</style></head><body>'+
+ '<div class="actions"><button onclick="window.print()">Imprimir / Salvar PDF</button></div>'+
+ '<h1>SIGMA · Jordana — Indicadores de Cirurgias Remarcadas</h1><div class="sub">Hospital São José · Relatório independente da Jornada Cirúrgica · Gerado em '+esc(new Date().toLocaleString('pt-BR'))+'</div>'+
+ '<div class="sub">Período (data original): '+esc(filterStart?fmtDate(filterStart):'Todos')+' a '+esc(filterEnd?fmtDate(filterEnd):'Todos')+' · Motivo: '+esc(filterReason||'Todos')+'</div>'+
+ '<div class="stats">'+stats.map(([label,n])=>'<div class="kpi"><span>'+esc(label)+'</span><strong>'+n+'</strong></div>').join('')+'</div>'+
+ '<table><thead><tr>'+['Data original','Nova data','Paciente','IDS','Procedimento','Cirurgião','Motivo','Observações'].map(h=>'<th>'+h+'</th>').join('')+'</tr></thead><tbody>'+(body||'<tr><td colspan="8">Nenhuma remarcação no filtro.</td></tr>')+'</tbody></table>'+
+ '<p class="sub">Este relatório contabiliza ocorrências de reagendamento, não cirurgias realizadas ou suspensas. Não contém o resumo geral da Jornada Cirúrgica.</p></body></html>';
+ const win=window.open('','_blank');
+ if(!win){alert('O navegador bloqueou a janela de impressão. Autorize pop-ups.');return}
+ win.document.open();win.document.write(html);win.document.close();win.focus();
+ setTimeout(()=>win.print(),350);
 }
 function exportCsv(){
  const rows=[['Data original','Nova data','Paciente','IDS','CPF','Procedimento','Especialidade','Cirurgião','Motivo','Outro motivo','Observações','Data do registro','Responsável UID']];
