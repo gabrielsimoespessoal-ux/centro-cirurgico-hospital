@@ -147,6 +147,21 @@ async function consultPatient(id){
  modal.innerHTML='<div class="back"><div class="modal" style="max-width:820px"><div class="mh"><b>Consultar cadastro — '+esc(p.patient_name||'Paciente')+'</b><button class="btn" type="button" id="hsjConsultClose">Fechar</button></div><div class="mb"><div class="notice">Consulta somente leitura; os dados não serão alterados.</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px">'+fields.map(([k,v])=>'<div style="padding:9px;border:1px solid #d6e2ee;border-radius:6px"><b>'+esc(k)+'</b><div style="overflow-wrap:anywhere">'+esc(v??'—')+'</div></div>').join('')+'</div></div></div></div>';
  modal.querySelector('#hsjConsultClose').onclick=()=>modal.innerHTML='';
 }
+function elapsedLabel(start,end){
+ const a=Date.parse(start||''),b=end?Date.parse(end):Date.now();
+ if(!Number.isFinite(a)||!Number.isFinite(b)||b<a)return 'Não disponível';
+ const total=Math.floor((b-a)/60000),days=Math.floor(total/1440),hours=Math.floor(total%1440/60),minutes=total%60;
+ return (days?days+'d ':'')+(hours||days?hours+'h ':'')+minutes+'min';
+}
+function refreshWaitingClocks(){
+ const root=document.getElementById('hsjMonitorSimplificado');
+ if(!root)return;
+ root.querySelectorAll('[data-hsj-wait-start]').forEach(el=>{
+  const end=el.dataset.hsjWaitEnd||null;
+  el.textContent=elapsedLabel(el.dataset.hsjWaitStart,end);
+ });
+}
+setInterval(refreshWaitingClocks,30000);
 function drawTable(rows,treated){
  const body=rows.map(r=>{
   const p=patient(r.patientId),name=p?.patient_name||'Cadastro não carregado';
@@ -154,7 +169,8 @@ function drawTable(rows,treated){
    '<div class="hsj-mon-person"><strong>'+esc(name)+'</strong><small>IDS: '+esc(p?.ids||'—')+'</small>'+
    '<small>'+esc(p?.specialty||'Especialidade não informada')+' · '+esc(p?.surgeon||'Médico não informado')+'</small></div>'+
    '<div class="hsj-mon-description"><small>'+esc(r.source)+' · '+esc(date(r.created))+'</small>'+
-   '<div><b>Motivo:</b> '+esc(r.reason||'—')+'</div>'+
+   '<div><b>Motivo:</b> '+esc(r.reason||'—')+'</div>'+ 
+    '<div class="hsj-wait-row"><b>'+(treated?'Tempo até a resposta: ':'Aguardando atendimento há: ')+'</b><span data-hsj-wait-start="'+esc(r.created||'')+'" data-hsj-wait-end="'+esc(treated?(r.completed||''):'')+'">'+esc(elapsedLabel(r.created,treated?r.completed:null))+'</span></div>'+
    (treated?'<div><b>Resposta:</b> '+esc(r.response||'Sem resposta documentada')+'</div><div><b>Concluído:</b> '+esc(date(r.completed))+' · '+esc(labels[r.destination]||r.destination||'Sem encaminhamento')+'</div>':'')+
    noteHistory(r)+'</div>'+
    '<div class="hsj-mon-actions">'+(treated?'':'<button type="button" class="btn small" data-hsj-note="'+esc(r.key)+'">Só responder</button><button type="button" class="btn primary small" data-hsj-answer="'+esc(r.key)+'">Responder / encaminhar</button>')+
