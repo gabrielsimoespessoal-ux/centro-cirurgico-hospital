@@ -8,7 +8,7 @@ const iso=(y,m,d)=>y+'-'+pad(m)+'-'+pad(d);
 const dateBR=s=>s? s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice(0,4):'';
 const today=()=>{const d=new Date();return iso(d.getFullYear(),d.getMonth()+1,d.getDate())};
 const special=['geral','ortopedia','urologia'];
-let ref=new Date(),month=ref.getMonth(),year=ref.getFullYear(),selectedMode='geral',selectedDate='',calendarBusy=false;
+let ref=new Date(),month=ref.getMonth(),year=ref.getFullYear(),selectedMode='geral',selectedDate='',showSelectedPatients=false,calendarBusy=false;
 let rows=[],error='';
 let lastLoad=0,lastAttempt=0;
 function appliedRules(day,mode){
@@ -37,7 +37,7 @@ async function fetchRows(){
  if(!t)throw Error('Faça login antes de consultar a agenda.');
  let result=[];
  for(let offset=0;offset<100000;offset+=500){
-  const url='https://uulsxmdycbihwkbftcdv.supabase.co/rest/v1/surgeries?select=id,consultation_date,specialty,patient_name,active&active=eq.true&consultation_date=not.is.null&order=consultation_date.asc,id.asc&limit=500&offset='+offset;
+  const url='https://uulsxmdycbihwkbftcdv.supabase.co/rest/v1/surgeries?select=id,consultation_date,consultation_time,specialty,patient_name,ids,surgeon,source_unit,appointment_responsible,consultation_only,stage,active&active=eq.true&consultation_date=not.is.null&order=consultation_date.asc,id.asc&limit=500&offset='+offset;
   const response=await fetch(url,{headers:{apikey:'sb_publishable_odmXzemIQZwx1BxrJiUYnQ_iZfPVHlV',Authorization:'Bearer '+t}});
   if(!response.ok)throw Error('Erro ao consultar vagas: '+response.status);
   const page=await response.json();
@@ -83,6 +83,17 @@ function countLabel(info){
  if(info.remaining==null)return info.relevant?info.relevant+' marcada(s)':'Sem agendamento';
  return info.remaining>0?info.remaining+' vaga(s) livre(s)':'Lotado';
 }
+function escapePatient(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function patientsHtml(){
+ if(!showSelectedPatients||!selectedDate)return '';
+ const list=rows.filter(x=>x.consultation_date===selectedDate&&(selectedMode==='geral'||norm(x.specialty).includes(selectedMode==='ortopedia'?'ORTOPED':'UROLOG')))
+  .sort((a,b)=>String(a.consultation_time||'').localeCompare(String(b.consultation_time||''))||String(a.patient_name||'').localeCompare(String(b.patient_name||'')));
+ const th=['Hora','Paciente','IDS','Especialidade','Médico','Unidade','Origem do cadastro'].map(v=>'<th style="text-align:left;padding:8px;border-bottom:1px solid #ccd9e8">'+v+'</th>').join('');
+ const tr=list.map(p=>'<tr>'+[String(p.consultation_time||'').slice(0,5)||'—',p.patient_name||'—',p.ids||'—',p.specialty||'—',p.surgeon||'—',p.source_unit||'—',p.consultation_only?'Cadastro exclusivo da consulta':'Paciente da jornada'].map(v=>'<td style="padding:8px;border-bottom:1px solid #e2eaf4">'+escapePatient(v)+'</td>').join('')+'</tr>').join('');
+ return '<div id="jc-selected-patients" class="jc-detail" style="background:#f8fbff;margin-top:10px"><b>Pacientes agendados — '+dateBR(selectedDate)+' ('+list.length+')</b>'+
+ (list.length?'<div style="overflow:auto;margin-top:8px"><table style="width:100%;min-width:750px;border-collapse:collapse;font-size:12px"><thead><tr>'+th+'</tr></thead><tbody>'+tr+'</tbody></table></div>':'<p>Nenhum paciente agendado nesta data e seleção.</p>')+
+ '<div class="jc-note">Relação extraída da agenda central, incluindo cadastros exclusivos para consulta, independentemente dos filtros gerais.</div></div>';
+}
 function html(){
  const monthName=new Date(year,month,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
  const first=new Date(year,month,1).getDay();
@@ -102,7 +113,8 @@ function html(){
   +'<button type="button" class="jc-button" id="jc-prev" aria-label="Mês anterior">‹</button><span class="jc-month">'+monthName+'</span><button type="button" class="jc-button" id="jc-next" aria-label="Mês seguinte">›</button><button type="button" class="jc-button" id="jc-today">Hoje</button><button type="button" class="jc-button" id="jc-update">Atualizar vagas</button></div></div>'
   +'<div class="jc-week">'+['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].map(x=>'<span>'+x+'</span>').join('')+'</div><div class="jc-days">'+daysHtml+'</div>'
   +'<div class="jc-foot"><span><i class="jc-dot" style="background:#a3dac0"></i>Disponível</span><span><i class="jc-dot" style="background:#ebcb74"></i>Parcialmente ocupado</span><span><i class="jc-dot" style="background:#e9aaaa"></i>Lotado</span><span><i class="jc-dot" style="background:#dae4f0"></i>Capacidade não definida</span></div>'
-  +(selectedDate?'<div class="jc-detail"><b>📍 '+dateBR(selectedDate)+'</b> · '+detail.relevant+' consulta(s) '+(selectedMode==='geral'?'na agenda geral':'de '+(selectedMode==='ortopedia'?'Ortopedia':'Urologia'))+' · '+(detail.remaining==null?'Sem capacidade máxima configurada para a seleção nesse dia.':Math.max(0,detail.remaining)+' vaga(s) disponíveis')+'<div>'+detail.details.map(r=>r.label+': <b>'+r.used+'/'+r.max+'</b>').join(' · ')+'</div><button type="button" class="jc-button" id="jc-filter-date">Visualizar consultas deste dia</button></div>':'')
+  +(selectedDate?'<div class="jc-detail"><b>📍 '+dateBR(selectedDate)+'</b> · '+detail.relevant+' consulta(s) '+(selectedMode==='geral'?'na agenda geral':'de '+(selectedMode==='ortopedia'?'Ortopedia':'Urologia'))+' · '+(detail.remaining==null?'Sem capacidade máxima configurada para a seleção nesse dia.':Math.max(0,detail.remaining)+' vaga(s) disponíveis')+'<div>'+detail.details.map(r=>r.label+': <b>'+r.used+'/'+r.max+'</b>').join(' · ')+'</div><button type="button" class="jc-button" id="jc-filter-date">'+(showSelectedPatients?'Ocultar pacientes':'Visualizar consultas deste dia')+'</button></div>':'')
+  +patientsHtml()
   +'<div class="jc-note">Terça: 10 consultas no total. Quarta: 7 vagas para Ortopedia. Urologia: 2 vagas por dia útil. Nos demais dias/especialidades sem regra, o sistema não presume uma capacidade máxima. A atualização não modifica nenhum agendamento.</div>'
   +(error?'<div class="jc-detail" style="color:#a42318">Não foi possível atualizar vagas: '+String(error).replace(/</g,'&lt;')+'. Dados anteriores preservados.</div>':'');
 }
@@ -111,20 +123,14 @@ function redraw(){
  if(!e||S.view!=='consulta_preop')return;
  e.innerHTML=html();
  e.querySelector('#jc-mode').value=selectedMode;
- e.querySelector('#jc-mode').onchange=x=>{selectedMode=x.target.value;redraw()};
- e.querySelector('#jc-prev').onclick=()=>{month--;if(month<0){year--;month=11}selectedDate='';redraw()};
- e.querySelector('#jc-next').onclick=()=>{month++;if(month>11){year++;month=0}selectedDate='';redraw()};
- e.querySelector('#jc-today').onclick=()=>{const d=new Date();year=d.getFullYear();month=d.getMonth();selectedDate=today();redraw()};
+ e.querySelector('#jc-mode').onchange=x=>{selectedMode=x.target.value;showSelectedPatients=false;redraw()};
+ e.querySelector('#jc-prev').onclick=()=>{month--;if(month<0){year--;month=11}selectedDate='';showSelectedPatients=false;redraw()};
+ e.querySelector('#jc-next').onclick=()=>{month++;if(month>11){year++;month=0}selectedDate='';showSelectedPatients=false;redraw()};
+ e.querySelector('#jc-today').onclick=()=>{const d=new Date();year=d.getFullYear();month=d.getMonth();selectedDate=today();showSelectedPatients=false;redraw()};
  e.querySelector('#jc-update').onclick=refresh;
- e.querySelectorAll('[data-jc-date]').forEach(b=>b.onclick=()=>{selectedDate=b.dataset.jcDate;redraw()});
+ e.querySelectorAll('[data-jc-date]').forEach(b=>b.onclick=()=>{selectedDate=b.dataset.jcDate;showSelectedPatients=false;redraw()});
  if(selectedDate){
-  e.querySelector('#jc-filter-date').onclick=()=>{
-   const f=document.getElementById('gfDateFrom'),t=document.getElementById('gfDateTo'),single=document.getElementById('gfDate');
-   if(f&&t){f.value=selectedDate;t.value=selectedDate;f.dispatchEvent(new Event('change',{bubbles:true}));t.dispatchEvent(new Event('change',{bubbles:true}))}
-   else if(single){single.value=selectedDate;single.dispatchEvent(new Event('change',{bubbles:true}))}
-   else {alert('Dia selecionado: '+dateBR(selectedDate)+'. Utilize os filtros de data da consulta para ver os pacientes.');return}
-   if(typeof renderConsult==='function')renderConsult();
-  }
+  e.querySelector('#jc-filter-date').onclick=()=>{showSelectedPatients=!showSelectedPatients;redraw();if(showSelectedPatients)document.getElementById('jc-selected-patients')?.scrollIntoView({block:'nearest',behavior:'smooth'});};
  }
 }
 function mount(){
