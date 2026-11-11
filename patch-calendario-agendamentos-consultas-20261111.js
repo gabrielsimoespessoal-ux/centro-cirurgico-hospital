@@ -92,16 +92,16 @@ function html(){
   const dateNum=i-first+1;
   if(dateNum<1||dateNum>days){daysHtml+='<div class="jc-day jc-outside" aria-hidden="true"></div>';continue}
   const dt=iso(year,month+1,dateNum),inf=status(dt,selectedMode);
-  const label=inf.remaining==null?'Sem limite definido':inf.remaining<=0?'Lotado':inf.relevant?'Parcialmente ocupado':'Disponível';
+  const label=inf.remaining==null?'Capacidade não definida':inf.remaining<=0?'Lotado':inf.relevant?'Parcialmente ocupado':'Disponível';
   daysHtml+='<button type="button" data-jc-date="'+dt+'" class="jc-day jc-'+inf.state+(dt===selectedDate?' jc-selected':'')+(dt<today()?' jc-past':'')+'" title="'+label+' — '+inf.relevant+' consultas" aria-label="'+dateBR(dt)+': '+label+'">'
-   +'<span class="jc-date">'+dateNum+'</span><span class="jc-meta">'+inf.relevant+' agendada(s)</span><span class="jc-lbl">'+(inf.remaining==null?'Sem limite':countLabel(inf))+'</span></button>';
+   +'<span class="jc-date">'+dateNum+'</span><span class="jc-meta">'+inf.relevant+' agendada(s)</span><span class="jc-lbl">'+(inf.remaining==null?'':countLabel(inf))+'</span></button>';
  }
  const detail=selectedDate?status(selectedDate,selectedMode):null;
  return '<div class="jc-head"><div><h3>📅 Calendário de disponibilidade — Consultas</h3><div class="jc-sub">Ocupação real da agenda e vagas segundo as regras de cada especialidade</div></div><div class="jc-bar">'
   +'<label style="font-size:12px">Visualizar <select id="jc-mode"><option value="geral">Agenda geral</option><option value="ortopedia">Ortopedia</option><option value="urologia">Urologia</option></select></label>'
   +'<button type="button" class="jc-button" id="jc-prev" aria-label="Mês anterior">‹</button><span class="jc-month">'+monthName+'</span><button type="button" class="jc-button" id="jc-next" aria-label="Mês seguinte">›</button><button type="button" class="jc-button" id="jc-today">Hoje</button><button type="button" class="jc-button" id="jc-update">Atualizar vagas</button></div></div>'
   +'<div class="jc-week">'+['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].map(x=>'<span>'+x+'</span>').join('')+'</div><div class="jc-days">'+daysHtml+'</div>'
-  +'<div class="jc-foot"><span><i class="jc-dot" style="background:#a3dac0"></i>Disponível</span><span><i class="jc-dot" style="background:#ebcb74"></i>Parcialmente ocupado</span><span><i class="jc-dot" style="background:#e9aaaa"></i>Lotado</span><span><i class="jc-dot" style="background:#dae4f0"></i>Sem limite configurado</span></div>'
+  +'<div class="jc-foot"><span><i class="jc-dot" style="background:#a3dac0"></i>Disponível</span><span><i class="jc-dot" style="background:#ebcb74"></i>Parcialmente ocupado</span><span><i class="jc-dot" style="background:#e9aaaa"></i>Lotado</span><span><i class="jc-dot" style="background:#dae4f0"></i>Capacidade não definida</span></div>'
   +(selectedDate?'<div class="jc-detail"><b>📍 '+dateBR(selectedDate)+'</b> · '+detail.relevant+' consulta(s) '+(selectedMode==='geral'?'na agenda geral':'de '+(selectedMode==='ortopedia'?'Ortopedia':'Urologia'))+' · '+(detail.remaining==null?'Sem capacidade máxima configurada para a seleção nesse dia.':Math.max(0,detail.remaining)+' vaga(s) disponíveis')+'<div>'+detail.details.map(r=>r.label+': <b>'+r.used+'/'+r.max+'</b>').join(' · ')+'</div><button type="button" class="jc-button" id="jc-filter-date">Visualizar consultas deste dia</button></div>':'')
   +'<div class="jc-note">Terça: 10 consultas no total. Quarta: 7 vagas para Ortopedia. Urologia: 2 vagas por dia útil. Nos demais dias/especialidades sem regra, o sistema não presume uma capacidade máxima. A atualização não modifica nenhum agendamento.</div>'
   +(error?'<div class="jc-detail" style="color:#a42318">Não foi possível atualizar vagas: '+String(error).replace(/</g,'&lt;')+'. Dados anteriores preservados.</div>':'');
