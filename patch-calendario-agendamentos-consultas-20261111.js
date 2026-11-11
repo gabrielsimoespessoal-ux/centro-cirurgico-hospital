@@ -10,7 +10,7 @@ const today=()=>{const d=new Date();return iso(d.getFullYear(),d.getMonth()+1,d.
 const special=['geral','ortopedia','urologia'];
 let ref=new Date(),month=ref.getMonth(),year=ref.getFullYear(),selectedMode='geral',selectedDate='',calendarBusy=false;
 let rows=[],error='';
-let lastLoad=0;
+let lastLoad=0,lastAttempt=0;
 function appliedRules(day,mode){
  const w=new Date(day+'T12:00:00').getDay();
  let rules=[];
@@ -138,10 +138,10 @@ function mount(){
   if(anchor)anchor.insertAdjacentElement('afterend',box);else card.querySelector('.section-head')?.insertAdjacentElement('afterend',box);
  }
  redraw();
- if(!lastLoad&&!calendarBusy)refresh();
+ if(!lastLoad&&!calendarBusy&&Date.now()-lastAttempt>15000)refresh();
 }
 async function refresh(){
- if(calendarBusy)return;calendarBusy=true;
+ if(calendarBusy)return;calendarBusy=true;lastAttempt=Date.now();
  try{await fetchRows();error=''}catch(e){error=e.message||String(e)}
  finally{calendarBusy=false;mount()}
 }
