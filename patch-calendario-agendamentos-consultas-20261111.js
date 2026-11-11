@@ -14,7 +14,9 @@ let lastLoad=0,lastAttempt=0;
 function appliedRules(day,mode){
  const w=new Date(day+'T12:00:00').getDay();
  let rules=[];
- if(w===2)rules.push({kind:'geral',label:'Limite total de terça-feira',max:10});
+ // Padronização visual: todos os dias usam a referência geral de 10 consultas.
+ // Os limites específicos de especialidade continuam válidos em paralelo.
+ rules.push({kind:'geral',label:'Limite geral diário',max:10});
  if(mode==='ortopedia'&&w===3)rules.push({kind:'ortopedia',label:'Ortopedia na quarta-feira',max:7});
  if(mode==='urologia'&&w>=1&&w<=5)rules.push({kind:'urologia',label:'Urologia nos dias úteis',max:2});
  return rules;
@@ -115,7 +117,7 @@ function html(){
   +'<div class="jc-foot"><span><i class="jc-dot" style="background:#a3dac0"></i>Disponível</span><span><i class="jc-dot" style="background:#ebcb74"></i>Parcialmente ocupado</span><span><i class="jc-dot" style="background:#e9aaaa"></i>Lotado</span><span><i class="jc-dot" style="background:#dae4f0"></i>Capacidade não definida</span></div>'
   +(selectedDate?'<div class="jc-detail"><b>📍 '+dateBR(selectedDate)+'</b> · '+detail.relevant+' consulta(s) '+(selectedMode==='geral'?'na agenda geral':'de '+(selectedMode==='ortopedia'?'Ortopedia':'Urologia'))+' · '+(detail.remaining==null?'Sem capacidade máxima configurada para a seleção nesse dia.':Math.max(0,detail.remaining)+' vaga(s) disponíveis')+'<div>'+detail.details.map(r=>r.label+': <b>'+r.used+'/'+r.max+'</b>').join(' · ')+'</div><button type="button" class="jc-button" id="jc-filter-date">'+(showSelectedPatients?'Ocultar pacientes':'Visualizar consultas deste dia')+'</button></div>':'')
   +patientsHtml()
-  +'<div class="jc-note">Terça: 10 consultas no total. Quarta: 7 vagas para Ortopedia. Urologia: 2 vagas por dia útil. Nos demais dias/especialidades sem regra, o sistema não presume uma capacidade máxima. A atualização não modifica nenhum agendamento.</div>'
+  +'<div class="jc-note">Referência geral de cores: 10 consultas por dia, inclusive fins de semana. Quarta: até 7 consultas de Ortopedia. Urologia: até 2 consultas por dia útil. O calendário é informativo e não altera nem bloqueia agendamentos.</div>'
   +(error?'<div class="jc-detail" style="color:#a42318">Não foi possível atualizar vagas: '+String(error).replace(/</g,'&lt;')+'. Dados anteriores preservados.</div>':'');
 }
 function redraw(){
