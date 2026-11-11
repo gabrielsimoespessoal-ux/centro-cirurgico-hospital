@@ -128,7 +128,7 @@ function redraw(){
  }
 }
 function mount(){
- if(!window.S||S.view!=='consulta_preop')return;
+ if(typeof S==='undefined'||S.view!=='consulta_preop')return;
  const card=document.querySelector('#content section.card');
  if(!card)return;
  let box=card.querySelector('#jordana-cal');
@@ -138,6 +138,7 @@ function mount(){
   if(anchor)anchor.insertAdjacentElement('afterend',box);else card.querySelector('.section-head')?.insertAdjacentElement('afterend',box);
  }
  redraw();
+ if(!lastLoad&&!calendarBusy)refresh();
 }
 async function refresh(){
  if(calendarBusy)return;calendarBusy=true;
@@ -153,7 +154,7 @@ function install(){
  const oldCurrent=window.renderCurrent;
  window.renderCurrent=function(){const result=oldCurrent.apply(this,arguments);if(S.view==='consulta_preop')mount();return result};
  if(S.view==='consulta_preop')mount();
- refresh();
+ if(localStorage.getItem('sb_access_token'))refresh();
  setInterval(()=>{if(S.view==='consulta_preop'&&Date.now()-lastLoad>60000)refresh()},60000);
  return true;
 }
