@@ -84,7 +84,7 @@ function exportCsv(){
 }
 function newRecord(editing=null){
  const m=document.getElementById('modal');if(!m)return;
- const patients=(S?.rows||[]).filter(x=>x.active!==false);
+ const patients=(S?.rows||[]); // Pesquisa inclui cadastros inativos e históricos carregados
  m.innerHTML='<div class="back" id="rm-overlay"><div class="modal"><div class="mh"><div><h2 style="margin:0">'+(editing?'Editar reagendamento':'Registrar cirurgia remarcada')+'</h2><span class="sub">Indicador independente: não modifica Fila, Mapa ou Jornada Cirúrgica</span></div><button class="btn" id="rm-close">Fechar</button></div><form id="rm-form"><div class="mb"><div class="grid"><label class="field span3"><span>Buscar paciente já cadastrado (opcional)</span><input id="rm-lookup" autocomplete="off" placeholder="Nome / IDS / CPF"><select id="rm-pick" size="4" style="display:none;margin-top:6px;width:100%"></select></label>'+field('name','Nome completo do paciente *','text','required minlength="3" maxlength="200"')+field('ids','IDS / Prontuário','text')+field('cpf','CPF','text')+field('procedure','Procedimento cirúrgico *','text','required minlength="3"')+field('specialty','Especialidade','text')+field('surgeon','Médico cirurgião','text')+field('original','Data da cirurgia originalmente prevista *','date','required')+field('newdate','Nova data prevista (se definida)','date')+'<label class="field span2"><span>Motivo do reagendamento *</span><select id="rm-reason" required>'+selectOptions(MOTIVOS)+'</select></label><label class="field span3" id="rm-other-wrap" style="display:none"><span>Especifique o novo motivo *</span><input id="rm-other" maxlength="500"></label><label class="field span3"><span>Descrição / justificativa complementar</span><textarea id="rm-notes" rows="3" maxlength="2000" placeholder="Detalhes da ocorrência, contexto e providências..."></textarea></label></div><div class="notice">O cadastro registra uma ocorrência estatística. Não altera a data nem o status cirúrgico do paciente no Mapa.</div><div id="rm-message" class="sub"></div></div><div class="mf"><button type="button" class="btn" id="rm-cancel">Cancelar</button><button type="submit" class="btn primary" id="rm-save">'+(editing?'Salvar alterações':'Salvar registro do indicador')+'</button></div></form></div></div>';
  let surgeryId=null;
  const dom=id=>document.getElementById('rm-'+id);
@@ -97,17 +97,17 @@ function newRecord(editing=null){
  }
  dom('reason').onchange=()=>{dom('other-wrap').style.display=dom('reason').value==='Outro motivo'?'flex':'none';dom('other').required=dom('reason').value==='Outro motivo'};
  dom('reason').onchange();
- if(editing){dom('lookup').disabled=true;dom('pick').style.display='none';dom('lookup').placeholder='Cadastro vinculado ao registro original';}
+ if(editing){dom('lookup').placeholder='Pesquisar por nome, IDS ou CPF para corrigir vínculo';}
  dom('lookup').oninput=()=>{
-  const q=dom('lookup').value.trim().toLowerCase(),select=dom('pick');
-  surgeryId=null;
-  if(q.length<3){select.style.display='none';return}
-  const list=patients.filter(x=>[x.patient_name,x.ids,x.cpf].join(' ').toLowerCase().includes(q)).slice(0,60);
+  const q=dom('lookup').value.trim().toLocaleLowerCase('pt-BR'),select=dom('pick');
+  // Digitar na pesquisa não desfaz o vínculo atual; somente selecionar outro paciente o altera.
+  if(q.length<2){select.style.display='none';return}
+  const list=patients.filter(x=>[x.patient_name,x.ids,x.cpf].join(' ').toLocaleLowerCase('pt-BR').includes(q)).slice(0,60);
   select.innerHTML=list.map(x=>'<option value="'+esc(x.id)+'">'+esc(x.patient_name)+' · '+esc(x.ids||'sem IDS')+' · '+esc(x.procedure_name||'')+'</option>').join('');
   select.style.display=list.length?'block':'none';
  };
  dom('pick').onchange=()=>{
-  const p=patients.find(x=>x.id===dom('pick').value);if(!p)return;
+  const p=patients.find(x=>String(x.id)===String(dom('pick').value));if(!p)return;
   surgeryId=p.id;dom('name').value=p.patient_name||'';dom('ids').value=p.ids||'';dom('cpf').value=p.cpf||'';dom('procedure').value=p.procedure_name||'';dom('specialty').value=p.specialty||'';dom('surgeon').value=p.surgeon||'';dom('original').value=p.surgery_date||p.programming_date||'';dom('pick').style.display='none';dom('lookup').value=p.patient_name||'';
  };
  dom('form').onsubmit=async e=>{
