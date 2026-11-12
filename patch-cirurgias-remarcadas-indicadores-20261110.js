@@ -3,7 +3,7 @@
 // Indicador autônomo: operações somente na tabela cirurgias_remarcadas_indicadores.
 // Não altera nenhuma linha de surgeries, etapa, mapa ou contadores da jornada.
 const VIEW='remarcadas_indicadores';
-const RELEASE='2026-11-12-edicao-verificada';
+const RELEASE='2026-11-12-cadastro-novo-corrigido';
 const reportStyle=document.createElement('style');
 reportStyle.id='hsj-remarcadas-only-styles';
 reportStyle.textContent='body:has(#remarcadas-relatorio) #hsjGlobalCountsV16{display:none!important}body:has(#remarcadas-relatorio) .hsj-journey-summary{display:none!important}';
@@ -54,7 +54,7 @@ function draw(){
  const f=()=>{filterStart=document.getElementById('rm-from').value;filterEnd=document.getElementById('rm-to').value;filterReason=document.getElementById('rm-filter-reason').value;filterName=document.getElementById('rm-filter-name').value.toLowerCase();draw()};
  for(const id of ['rm-from','rm-to','rm-filter-reason'])document.getElementById(id).addEventListener('change',f);
  document.getElementById('rm-filter-name').addEventListener('change',f);
- document.getElementById('rm-new').onclick=newRecord;
+ document.getElementById('rm-new').onclick=()=>newRecord();
  document.getElementById('rm-refresh').onclick=read;
  document.getElementById('rm-export').onclick=exportCsv;
  document.getElementById('rm-print').onclick=printReport;
@@ -104,6 +104,12 @@ async function editRecord(entry){
  }
 }
 function newRecord(editing=null){
+ // Segurança: callbacks do navegador recebem MouseEvent; esse evento NUNCA é um registro a editar.
+ // Novos lançamentos não têm ID até que o servidor confirme a inserção.
+ if(editing && typeof editing==='object' && !editing.id && (editing.type||editing.target||editing.currentTarget))editing=null;
+ if(editing && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(editing.id||''))){
+  alert('Não foi possível identificar a ocorrência para edição. Reabra pelo botão Editar na lista.');return;
+ }
  const m=document.getElementById('modal');if(!m)return;
  const patients=(S?.rows||[]); // Pesquisa inclui cadastros inativos e históricos carregados
  m.innerHTML='<div class="back" id="rm-overlay"><div class="modal"><div class="mh"><div><h2 style="margin:0">'+(editing?'Editar reagendamento':'Registrar cirurgia remarcada')+'</h2><span class="sub">Indicador independente: não modifica Fila, Mapa ou Jornada Cirúrgica</span></div><button class="btn" id="rm-close">Fechar</button></div><form id="rm-form"><div class="mb"><div class="grid"><label class="field span3"><span>Buscar paciente já cadastrado (opcional)</span><input id="rm-lookup" autocomplete="off" placeholder="Nome / IDS / CPF"><select id="rm-pick" size="4" style="display:none;margin-top:6px;width:100%"></select></label>'+field('name','Nome completo do paciente *','text','required minlength="3" maxlength="200"')+field('ids','IDS / Prontuário','text')+field('cpf','CPF','text')+field('procedure','Procedimento cirúrgico *','text','required minlength="3"')+field('specialty','Especialidade','text')+field('surgeon','Médico cirurgião','text')+field('original','Data da cirurgia originalmente prevista *','date','required')+field('newdate','Nova data prevista (se definida)','date')+'<label class="field span2"><span>Motivo do reagendamento *</span><select id="rm-reason" required>'+selectOptions(MOTIVOS)+'</select></label><label class="field span3" id="rm-other-wrap" style="display:none"><span>Especifique o novo motivo *</span><input id="rm-other" maxlength="500"></label><label class="field span3"><span>Descrição / justificativa complementar</span><textarea id="rm-notes" rows="3" maxlength="2000" placeholder="Detalhes da ocorrência, contexto e providências..."></textarea></label></div><div class="notice">O cadastro registra uma ocorrência estatística. Não altera a data nem o status cirúrgico do paciente no Mapa.</div><div id="rm-message" class="sub">'+(editing?.id?'Registro identificado no banco — edição habilitada.':'')+'</div></div><div class="mf"><button type="button" class="btn" id="rm-cancel">Cancelar</button><button type="submit" class="btn primary" id="rm-save">'+(editing?'Salvar alterações':'Salvar registro do indicador')+'</button></div></form></div></div>';
