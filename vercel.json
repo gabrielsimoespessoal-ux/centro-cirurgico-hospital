@@ -1,1 +1,59 @@
-{"rewrites":[{"source":"/app","destination":"/app-operacional.html"},{"source":"/importar","destination":"/importar-v3.html"}],"headers":[{"source":"/app","headers":[{"key":"Cache-Control","value":"no-store, no-cache, must-revalidate"}]},{"source":"/app-operacional.html","headers":[{"key":"Cache-Control","value":"no-store, no-cache, must-revalidate"}]},{"source":"/patch-(.*).js","headers":[{"key":"Cache-Control","value":"no-store, no-cache, must-revalidate"}]}]}
+{
+  "rewrites": [
+    {
+      "source": "/app",
+      "destination": "/app-operacional.html"
+    },
+    {
+      "source": "/importar",
+      "destination": "/importar-v3.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/app",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store, no-cache, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/app-operacional.html",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store, no-cache, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/patch-(.*).js",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store, no-cache, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/app.html",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store, no-cache, must-revalidate, max-age=0"
+        }
+      ]
+    },
+    {
+      "source": "/patch-cirurgias-remarcadas-indicadores-20261110.js",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store, no-cache, must-revalidate, max-age=0"
+        }
+      ]
+    }
+  ]
+}
