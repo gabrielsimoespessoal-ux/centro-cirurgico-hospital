@@ -48,7 +48,7 @@ function draw(){
  const e=content();if(!e)return;
  const list=visible();
  const stats=[['TOTAL DE REAGENDAMENTOS',list.length],...MOTIVOS.map(m=>[m.toLocaleUpperCase('pt-BR'),list.filter(x=>x.motivo===m).length])];
- e.innerHTML='<section class="card" id="remarcadas-relatorio"><div class="section-head"><div><h2>↻ Cirurgias Remarcadas</h2><div class="sub">Registro independente para indicadores. Não integra a Jornada Cirúrgica, Fila ou Mapa.</div></div><div style="display:flex;gap:7px;flex-wrap:wrap"><button class="btn primary" id="rm-new">+ Registrar reagendamento</button><button class="btn" id="rm-export">⬇ Excel (CSV)</button><button class="btn" id="rm-print">🖨 Imprimir</button><button class="btn" id="rm-refresh">↻ Atualizar</button></div></div><div class="cards">'+stats.map(([k,v])=>'<div class="kpi"><div class="label">'+k+'</div><div class="value">'+v+'</div></div>').join('')+'</div><div class="notice">Este painel contabiliza <b>ocorrências de remarcação</b>, não cirurgias realizadas ou suspensas. Um mesmo paciente pode ter mais de um registro de reagendamento. Motivos não são presumidos.</div><div class="consult-filters" style="grid-template-columns:repeat(4,minmax(0,1fr))"><label class="field"><span>Data original — de</span><input id="rm-from" type="date" value="'+esc(filterStart)+'"></label><label class="field"><span>Data original — até</span><input id="rm-to" type="date" value="'+esc(filterEnd)+'"></label><label class="field"><span>Motivo</span><select id="rm-filter-reason">'+selectOptions(MOTIVOS,'Todos os motivos')+'</select></label><label class="field"><span>Buscar paciente / IDS / médico</span><input id="rm-filter-name" value="'+esc(filterName)+'" placeholder="Nome, IDS ou procedimento"></label></div><div class="tablewrap"><table class="table" style="min-width:1060px"><thead><tr><th>Data inicial / nova</th><th>Paciente / IDS</th><th>Procedimento / especialidade</th><th>Cirurgião</th><th>Motivo</th><th>Registro</th><th>Ações</th></tr></thead><tbody>'+ (list.length?list.map(x=>'<tr><td><b>'+fmtDate(x.data_original)+'</b><div class="sub">Nova: '+fmtDate(x.data_remarcada)+'</div></td><td><b>'+esc(x.paciente_nome)+'</b><div class="sub">'+esc(x.paciente_ids||'Sem IDS')+'</div></td><td>'+esc(x.procedimento)+'<div class="sub">'+esc(x.especialidade)+'</div></td><td>'+esc(x.medico_cirurgiao)+'</td><td><b>'+esc(x.motivo)+'</b>'+(x.motivo_outro?'<div class="sub">'+esc(x.motivo_outro)+'</div>':'')+(x.observacoes?'<div class="sub">'+esc(x.observacoes)+'</div>':'')+'</td><td>'+new Date(x.registrado_em).toLocaleString('pt-BR')+'<div class="sub">Ocorrência registrada</div></td><td><button type="button" class="btn small" data-rm-edit="'+esc(x.id)+'">✎ Editar</button></td></tr>').join(''):'<tr><td colspan="7" style="padding:30px;text-align:center">Nenhum registro para os filtros.</td></tr>')+'</tbody></table></div>'+(lastError?'<div class="notice" style="background:#fff0ed;color:#ad3025">Falha ao carregar dados: '+esc(lastError)+'</div>':'')+'</section>';
+ e.innerHTML='<section class="card" id="remarcadas-relatorio"><div class="section-head"><div><h2>↻ Cirurgias Remarcadas</h2><div class="sub">Registro independente para indicadores. Não integra a Jornada Cirúrgica, Fila ou Mapa.</div></div><div style="display:flex;gap:7px;flex-wrap:wrap"><button class="btn primary" id="rm-new">+ Registrar reagendamento</button><button class="btn" id="rm-export">⬇ Excel (CSV)</button><button class="btn" id="rm-print">🖨 Imprimir</button><button class="btn" id="rm-refresh">↻ Atualizar</button></div></div><div class="cards">'+stats.map(([k,v])=>'<div class="kpi"><div class="label">'+k+'</div><div class="value">'+v+'</div></div>').join('')+'</div><div class="notice">Este painel contabiliza <b>ocorrências de remarcação</b>, não cirurgias realizadas ou suspensas. Um mesmo paciente pode ter mais de um registro de reagendamento. Motivos não são presumidos.</div><div class="consult-filters" style="grid-template-columns:repeat(4,minmax(0,1fr))"><label class="field"><span>Data original — de</span><input id="rm-from" type="date" value="'+esc(filterStart)+'"></label><label class="field"><span>Data original — até</span><input id="rm-to" type="date" value="'+esc(filterEnd)+'"></label><label class="field"><span>Motivo</span><select id="rm-filter-reason">'+selectOptions(MOTIVOS,'Todos os motivos')+'</select></label><label class="field"><span>Buscar paciente / IDS / médico</span><input id="rm-filter-name" value="'+esc(filterName)+'" placeholder="Nome, IDS ou procedimento"></label></div><div class="tablewrap"><table class="table" style="min-width:1060px"><thead><tr><th>Data inicial / nova</th><th>Paciente / IDS</th><th>Procedimento / especialidade</th><th>Cirurgião</th><th>Motivo</th><th>Registro</th><th>Ações</th></tr></thead><tbody>'+ (list.length?list.map((x,index)=>'<tr><td><b>'+fmtDate(x.data_original)+'</b><div class="sub">Nova: '+fmtDate(x.data_remarcada)+'</div></td><td><b>'+esc(x.paciente_nome)+'</b><div class="sub">'+esc(x.paciente_ids||'Sem IDS')+'</div></td><td>'+esc(x.procedimento)+'<div class="sub">'+esc(x.especialidade)+'</div></td><td>'+esc(x.medico_cirurgiao)+'</td><td><b>'+esc(x.motivo)+'</b>'+(x.motivo_outro?'<div class="sub">'+esc(x.motivo_outro)+'</div>':'')+(x.observacoes?'<div class="sub">'+esc(x.observacoes)+'</div>':'')+'</td><td>'+new Date(x.registrado_em).toLocaleString('pt-BR')+'<div class="sub">Ocorrência registrada</div></td><td><button type="button" class="btn small" data-rm-edit="'+index+'">✎ Editar</button></td></tr>').join(''):'<tr><td colspan="7" style="padding:30px;text-align:center">Nenhum registro para os filtros.</td></tr>')+'</tbody></table></div>'+(lastError?'<div class="notice" style="background:#fff0ed;color:#ad3025">Falha ao carregar dados: '+esc(lastError)+'</div>':'')+'</section>';
  document.getElementById('rm-filter-reason').value=filterReason;
  const f=()=>{filterStart=document.getElementById('rm-from').value;filterEnd=document.getElementById('rm-to').value;filterReason=document.getElementById('rm-filter-reason').value;filterName=document.getElementById('rm-filter-name').value.toLowerCase();draw()};
  for(const id of ['rm-from','rm-to','rm-filter-reason'])document.getElementById(id).addEventListener('change',f);
@@ -57,7 +57,7 @@ function draw(){
  document.getElementById('rm-refresh').onclick=read;
  document.getElementById('rm-export').onclick=exportCsv;
  document.getElementById('rm-print').onclick=printReport;
- for(const btn of e.querySelectorAll('[data-rm-edit]'))btn.onclick=()=>newRecord(entries.find(x=>String(x.id)===btn.dataset.rmEdit));
+ for(const btn of e.querySelectorAll('[data-rm-edit]'))btn.onclick=()=>editRecord(list[Number(btn.dataset.rmEdit)]);
 }
 function printReport(){
  const list=visible();
@@ -81,6 +81,26 @@ function exportCsv(){
  if(typeof window.downloadCsv==='function'){window.downloadCsv('indicadores_cirurgias_remarcadas.csv',rows);return}
  const csv='\ufeff'+rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(';')).join('\r\n');
  const a=document.createElement('a');a.href=window.URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download='cirurgias_remarcadas.csv';a.click();window.URL.revokeObjectURL(a.href);
+}
+// Revalidar no banco antes de editar: impede atuar sobre entradas antigas/sem ID.
+async function editRecord(entry){
+ if(!entry){alert('Registro não encontrado na lista. Atualize e tente novamente.');return}
+ try{
+  let rows;
+  const id=String(entry.id||'');
+  if(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)){
+   rows=await request('/rest/v1/cirurgias_remarcadas_indicadores?select=*&id=eq.'+encodeURIComponent(id)+'&limit=1');
+  }else{
+   // Recuperação segura de telas antigas: só abre se houver uma única ocorrência exata.
+   const query=new URLSearchParams({select:'*',paciente_nome:'eq.'+String(entry.paciente_nome||''),data_original:'eq.'+String(entry.data_original||''),procedimento:'eq.'+String(entry.procedimento||''),limit:'2'});
+   rows=await request('/rest/v1/cirurgias_remarcadas_indicadores?'+query.toString());
+  }
+  if(!Array.isArray(rows)||rows.length!==1||!rows[0]?.id)throw Error('Registro não localizado de forma única no banco. Atualize o painel. Se o lançamento não aparecer, cadastre uma nova ocorrência.');
+  newRecord(rows[0]);
+ }catch(err){
+  alert('Não foi possível abrir para edição: '+(err.message||err));
+  await read();
+ }
 }
 function newRecord(editing=null){
  const m=document.getElementById('modal');if(!m)return;
@@ -124,10 +144,10 @@ function newRecord(editing=null){
   const btn=dom('save');btn.disabled=true;dom('message').textContent='Salvando no banco...';
   try{
     if(editing){
-     if(!editing.id)throw Error('Registro sem identificador; edição não permitida.');
+     if(!editing.id)throw Error('Identificador ausente. Atualize o painel e reabra o registro antes de editar.');
      const data=await request('/rest/v1/cirurgias_remarcadas_indicadores?id=eq.'+encodeURIComponent(editing.id),{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify(payload)});
-     if(!Array.isArray(data)||data.length!==1)throw Error('Alteração não confirmada pelo servidor. Confira as permissões de edição.');
-    }else await request('/rest/v1/cirurgias_remarcadas_indicadores',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify(payload)});
+     if(!Array.isArray(data)||data.length!==1||String(data[0].id)!==String(editing.id))throw Error('O banco não confirmou a edição deste registro. Atualize a lista e tente novamente.');
+    }else{const inserted=await request('/rest/v1/cirurgias_remarcadas_indicadores',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify(payload)});if(!Array.isArray(inserted)||inserted.length!==1||!inserted[0].id)throw Error('O servidor não confirmou o cadastro do reagendamento.');}
     close();await read();alert(editing?'Reagendamento atualizado. Indicadores recalculados.':'Reagendamento registrado apenas nos indicadores. Jornada Cirúrgica preservada.');
    }
   catch(err){dom('message').textContent='Não foi possível salvar: '+(err.message||err);btn.disabled=false}
