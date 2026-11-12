@@ -453,4 +453,33 @@ f.addEventListener('load',()=>{try{const d=f.contentDocument;const inject=()=>{i
   observer.observe(doc.head,{childList:true});
  });
 })();
+</script><script>
+(function(){
+ const frame=document.getElementById('appFrame');
+ if(!frame)return;
+ frame.addEventListener('load',()=>{
+  try{
+   const doc=frame.contentDocument, marker='patch-monitoramentos-unificados-relatorios-20261106.js';
+   const install=()=>{
+    if(doc.querySelector('script[data-hsj-surgical-calendar-holiday]'))return;
+    const script=doc.createElement('script');
+    script.dataset.hsjSurgicalCalendarHoliday='1';
+    script.src='/patch-calendario-mapa-feriados-20261112.js?v=20261112-01';
+    doc.head.appendChild(script);
+   };
+   const bind=node=>{
+    if(node?.tagName!=='SCRIPT'||!node.src?.includes(marker))return false;
+    node.addEventListener('load',install,{once:true});
+    return true;
+   };
+   if([...doc.scripts].some(bind))return;
+   const observer=new MutationObserver(changes=>{
+    for(const change of changes)for(const node of change.addedNodes){
+     if(bind(node)){observer.disconnect();return}
+    }
+   });
+   observer.observe(doc.head,{childList:true});
+  }catch(e){console.error('Falha ao carregar calendário de feriados do Mapa:',e)}
+ });
+})();
 </script></body></html>
