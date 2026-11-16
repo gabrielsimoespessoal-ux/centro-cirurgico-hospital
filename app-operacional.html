@@ -482,4 +482,35 @@ f.addEventListener('load',()=>{try{const d=f.contentDocument;const inject=()=>{i
   }catch(e){console.error('Falha ao carregar calendário de feriados do Mapa:',e)}
  });
 })();
+</script><script>
+(function(){
+ const frame=document.getElementById('appFrame');if(!frame)return;
+ frame.addEventListener('load',()=>{
+  const doc=frame.contentDocument;if(!doc)return;
+  let installed=false;
+  const install=()=>{
+   if(installed||doc.querySelector('script[data-hsj-map-required-before-route]'))return;
+   installed=true;
+   const script=doc.createElement('script');
+   script.dataset.hsjMapRequiredBeforeRoute='1';
+   script.src='/patch-mapa-atalho-agendamento-obrigatorio-20261116.js?v=20261116-01';
+   script.onerror=()=>console.error('Não foi possível carregar o agendamento obrigatório antes do Mapa.');
+   doc.head.appendChild(script);
+  };
+  const prior=[...doc.scripts].find(s=>s.src?.includes('patch-calendario-mapa-feriados-20261112.js'));
+  if(prior){
+   prior.addEventListener('load',install,{once:true});
+   if(doc.defaultView?.__hsjCalendarioMapaFeriados20261112)install();
+   return;
+  }
+  const observer=new MutationObserver(records=>{
+   for(const record of records)for(const node of record.addedNodes){
+    if(node?.tagName==='SCRIPT'&&node.src?.includes('patch-calendario-mapa-feriados-20261112.js')){
+     observer.disconnect();node.addEventListener('load',install,{once:true});return;
+    }
+   }
+  });
+  observer.observe(doc.head,{childList:true});
+ });
+})();
 </script></body></html>
