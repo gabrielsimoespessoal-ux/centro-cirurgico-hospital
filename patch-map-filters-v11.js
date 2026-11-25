@@ -4,8 +4,15 @@ S.mapFilters=S.mapFilters||{doctor:'',specialty:'',from:'',to:''};
 function mapFilterOptionsV11(rows,key){
   return [...new Set(rows.map(x=>String(x[key]||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
 }
+// Mesmo critério do calendário: suspensas, canceladas, negadas e realizadas
+// ficam fora do Mapa Cirúrgico operacional. Permanecem no banco e no histórico.
+function isScheduledForMapV11(x){
+  if(x.stage!=='mapa_cirurgico'||x.active===false)return false;
+  const status=String(x.patient_status||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().trim();
+  return !/SUSPENS|CANCEL|NEGAD/.test(status)&&status!=='REALIZADA';
+}
 function mapFilteredRowsV11(){
-  const all=(S.rows||[]).filter(x=>x.stage==='mapa_cirurgico'&&x.active!==false);
+  const all=(S.rows||[]).filter(isScheduledForMapV11);
   const f=S.mapFilters||{};
   return all.filter(x=>{
     const dt=String(x.surgery_date||'');
@@ -37,7 +44,7 @@ function roomTableV11(n,rows){
 }
 
 window.renderMap=function(){
-  const all=(S.rows||[]).filter(x=>x.stage==='mapa_cirurgico'&&x.active!==false);
+  const all=(S.rows||[]).filter(isScheduledForMapV11);
   const rows=mapFilteredRowsV11();
   const doctors=mapFilterOptionsV11(all,'surgeon');
   const specialties=mapFilterOptionsV11(all,'specialty');
@@ -53,7 +60,7 @@ window.renderMap=function(){
     <button class="btn primary" onclick="applyMapFiltersV11()">🔎 Filtrar</button><button class="btn" onclick="clearMapFiltersV11()">Limpar</button>
   </div></div>
   <div class="sub" style="margin:8px 0 12px"><b>${rows.length}</b> procedimento(s) no filtro atual${f.doctor?' • Médico: '+esc(f.doctor):''}${f.specialty?' • Especialidade: '+esc(f.specialty):''}${f.from?' • De: '+esc(f.from):''}${f.to?' • Até: '+esc(f.to):''}</div>
-  <div class="cards"><div class="kpi"><div class="label">CIRURGIAS NO FILTRO</div><div class="value">${rows.length}</div></div><div class="kpi orange"><div class="label">MÉDICOS NO FILTRO</div><div class="value">${new Set(rows.map(x=>x.surgeon).filter(Boolean)).size}</div></div><div class="kpi green"><div class="label">ESPECIALIDADES</div><div class="value">${new Set(rows.map(x=>x.specialty).filter(Boolean)).size}</div></div><div class="kpi teal"><div class="label">PERÍODO</div><div class="value" style="font-size:14px">${esc(f.from||'início')} → ${esc(f.to||'fim')}</div></div></div>
+  <div class="cards"><div class="kpi"><div class="label">CIRURGIAS AGENDADAS NO FILTRO</div><div class="value">${rows.length}</div></div><div class="kpi orange"><div class="label">MÉDICOS NO FILTRO</div><div class="value">${new Set(rows.map(x=>x.surgeon).filter(Boolean)).size}</div></div><div class="kpi green"><div class="label">ESPECIALIDADES</div><div class="value">${new Set(rows.map(x=>x.specialty).filter(Boolean)).size}</div></div><div class="kpi teal"><div class="label">PERÍODO</div><div class="value" style="font-size:14px">${esc(f.from||'início')} → ${esc(f.to||'fim')}</div></div></div>
   <div class="mini-tabs"><button class="mini-tab ${S.room==='all'?'on':''}" onclick="S.room='all';renderMap()">Visão Geral Simultânea</button>${[1,2,3,4].map(n=>`<button class="mini-tab ${S.room==String(n)?'on':''}" onclick="S.room='${n}';renderMap()">Sala 0${n}</button>`).join('')}</div>
   ${rows.some(x=>!String(x.map_room||'').replace(/\\D/g,''))?'<div class="tablewrap" style="margin:14px 0"><h3 style="padding:10px;color:#985600">⚠ Pacientes sem sala cirúrgica definida</h3><table class="table"><thead><tr><th>PACIENTE</th><th>PROCEDIMENTO</th><th>MÉDICO</th><th>DATA CIRURGIA</th><th>SITUAÇÃO</th></tr></thead><tbody>'+rows.filter(x=>!String(x.map_room||'').replace(/\\D/g,'')).map(x=>'<tr><td><b>'+esc(x.patient_name)+'</b></td><td>'+esc(x.procedure_name||'')+'</td><td>'+esc(x.surgeon||'')+'</td><td>'+esc(x.surgery_date||'Sem data')+'</td><td>Sem sala definida</td></tr>').join('')+'</tbody></table></div>':''}
   ${S.room==='all'?`<div class="rooms">${[1,2,3,4].map(n=>roomCardV11(n,rows)).join('')}</div><div class="tablewrap" style="margin-top:16px"><table class="table"><thead><tr><th>SALA</th><th>PACIENTE</th><th>PROCEDIMENTO</th><th>ESPECIALIDADE</th><th>MÉDICO</th><th>DATA CIRURGIA</th><th>RESERVAS ESPECIAIS</th><th>RESPONSÁVEL</th></tr></thead><tbody>${rows.map(x=>`<tr><td>${esc(x.map_room||'')}</td><td><b>${esc(x.patient_name)}</b></td><td>${esc(x.procedure_name||'')}</td><td>${esc(x.specialty||'')}</td><td>${esc(x.surgeon||'')}</td><td>${esc(x.surgery_date||'')}</td><td>${esc(x.map_reservations||'')}</td><td>${esc(x.map_responsible||'')}</td></tr>`).join('')||'<tr><td colspan="8" style="text-align:center;padding:28px">Nenhum procedimento encontrado no período/filtro.</td></tr>'}</tbody></table></div>`:roomTableV11(S.room,rows)}
