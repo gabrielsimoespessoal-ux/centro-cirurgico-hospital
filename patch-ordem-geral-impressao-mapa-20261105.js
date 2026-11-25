@@ -5,7 +5,7 @@ window.__hsjOrdemGeralMapa20261105=true;
 const normalized=v=>String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase();
 const safe=v=>String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 const state={positions:new Map(),busy:new Set(),fetchVersion:0};
-function mapPatients(){return (S.rows||[]).filter(p=>p.active!==false&&p.stage==='mapa_cirurgico');}
+function mapPatients(){return (S.rows||[]).filter(p=>p.active!==false&&p.stage==='mapa_cirurgico'&&!/SUSPENS|CANCEL|NEGAD/.test(normalized(p.patient_status||'').toUpperCase())&&normalized(p.patient_status||'').toUpperCase()!=='REALIZADA');}
 function groupKey(p){return String(p.surgery_date||'').slice(0,10)+'|'+normalized(p.specialty||'Não informada');}
 function orderFor(p){return state.positions.get(p.id);}
 function fallbackOrder(){
