@@ -32,8 +32,8 @@ window.editMapPatient=function(id){
         ${selectField('Sala *','map_room',x.map_room,['Sala 01','Sala 02','Sala 03','Sala 04'])}
         ${field('Data da cirurgia *','surgery_date',x.surgery_date,'date')}
         ${field('Responsável','map_responsible',x.map_responsible)}
-        <div class="field"><label>Reserva de UTI *</label><select id="f_map_uti"><option value="">Selecione...</option><option value="SIM" ${r.uti==='SIM'?'selected':''}>SIM</option><option value="NÃO" ${r.uti==='NÃO'?'selected':''}>NÃO</option></select></div>
-        <div class="field"><label>Reserva de Sangue *</label><select id="f_map_sangue"><option value="">Selecione...</option><option value="SIM" ${r.sangue==='SIM'?'selected':''}>SIM</option><option value="NÃO" ${r.sangue==='NÃO'?'selected':''}>NÃO</option></select></div>
+        <div class="field"><label>Reserva de UTI *</label><select id="f_map_uti" required aria-required="true"><option value="">Selecione SIM ou NÃO...</option><option value="SIM" ${r.uti==='SIM'?'selected':''}>SIM</option><option value="NÃO" ${r.uti==='NÃO'?'selected':''}>NÃO</option></select></div>
+        <div class="field"><label>Reserva de Sangue *</label><select id="f_map_sangue" required aria-required="true"><option value="">Selecione SIM ou NÃO...</option><option value="SIM" ${r.sangue==='SIM'?'selected':''}>SIM</option><option value="NÃO" ${r.sangue==='NÃO'?'selected':''}>NÃO</option></select></div>
         <div class="field span3"><label>Outras reservas / observações</label><textarea id="f_map_obs" rows="4" placeholder="Ex.: material especial, OPME, hemoderivados específicos, pré-internamento...">${esc(r.obs||'')}</textarea></div>
       </div>
     </div>
@@ -42,6 +42,12 @@ window.editMapPatient=function(id){
 };
 
 window.saveMapPatientV17=async function(id){
+  // Não permitir que o salvamento legado ignore a resposta obrigatória de
+  // internação antecipada. A rotina completa preserva todos os campos.
+  if(typeof window.hsjSaveMapExtraV2==='function')
+    return window.hsjSaveMapExtraV2(id);
+  alert('O formulário completo ainda não carregou. Atualize a página para informar UTI, sangue e internação antecipada.');
+  return;
   const room=document.getElementById('f_map_room')?.value||'';
   const date=document.getElementById('f_surgery_date')?.value||'';
   const resp=document.getElementById('f_map_responsible')?.value||'';
