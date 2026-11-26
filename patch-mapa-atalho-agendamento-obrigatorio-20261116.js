@@ -23,7 +23,7 @@ window.hsjMapaDireto=function(id){
  // Não altera etapa: abre o MESMO formulário usado para agendar no Mapa.
  window.editMapPatient(id);
  const root=document.querySelector('#modal .back'),body=root?.querySelector('.mb'),button=root?.querySelector('.mf button.primary');
- if(!root||!body||!button||!document.getElementById('f_map_uti')||!document.getElementById('f_map_surgery_time')){
+ if(!root||!body||!button||!document.getElementById('f_map_uti')||!document.getElementById('f_map_sangue')||!document.getElementById('hsj_pre')||!document.getElementById('f_map_surgery_time')){
    alert('O formulário completo não carregou. Nenhuma etapa foi alterada.');
    if(root)document.getElementById('modal').innerHTML='';
    return;
@@ -31,7 +31,7 @@ window.hsjMapaDireto=function(id){
  const note=document.createElement('div');
  note.className='notice';
  note.style.cssText='border-left:4px solid #096b5a;background:#ecfdf5;margin:10px 0';
- note.innerHTML='<b>Agendamento obrigatório antes do encaminhamento</b><div>O paciente permanecerá na etapa atual até o servidor confirmar sala, data, horário, responsável e reservas de UTI e sangue.</div>';
+ note.innerHTML='<b>Agendamento obrigatório antes do encaminhamento</b><div>O paciente permanecerá na etapa atual até o servidor confirmar sala, data, horário, responsável, reserva de UTI, reserva de sangue e internação antecipada (SIM ou NÃO).</div>';
  body.prepend(note);
  button.removeAttribute('onclick');
  button.onclick=()=>window.hsjSalvarMapaAntesDeEncaminhar(id);
@@ -53,7 +53,8 @@ window.hsjSalvarMapaAntesDeEncaminhar=async function(id){
   ['time','Informe o horário do procedimento.','f_map_surgery_time'],
   ['responsible','Informe o nome do responsável pelo agendamento.','f_map_responsible'],
   ['uti','Informe a reserva de UTI: SIM ou NÃO.','f_map_uti'],
-  ['blood','Informe a reserva de sangue: SIM ou NÃO.','f_map_sangue']
+  ['blood','Informe a reserva de sangue: SIM ou NÃO.','f_map_sangue'],
+  ['pre','Informe a internação antecipada: SIM ou NÃO.','hsj_pre']
  ];
  for(const [key,message,element] of required){
   if(!values[key]){alert(message);document.getElementById(element)?.focus();return}
@@ -61,7 +62,9 @@ window.hsjSalvarMapaAntesDeEncaminhar=async function(id){
  if(!dateValid(values.date)){alert('Data inválida.');return}
  if(!timeValid(values.time)){alert('Horário inválido.');return}
  if(values.responsible.length<2){alert('Informe o nome completo ou identificável de quem agendou.');return}
- if(!['SIM','NÃO'].includes(values.uti)||!['SIM','NÃO'].includes(values.blood)){alert('Escolha SIM ou NÃO para UTI e sangue.');return}
+ if(!['SIM','NÃO'].includes(values.uti)||!['SIM','NÃO'].includes(values.blood)||!['SIM','NÃO'].includes(values.pre)){
+  alert('Escolha obrigatoriamente SIM ou NÃO para UTI, sangue e internação antecipada.');return
+ }
  if(!original.updated_at){alert('Versão do cadastro indisponível. Atualize a Fila.');return}
  const button=document.querySelector('#modal .mf button.primary');
  if(button?.dataset.hsjTimeLoading){alert('Aguarde a consulta do horário anterior terminar.');return}
