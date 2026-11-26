@@ -43,7 +43,18 @@ window.renderMap=function(){
  const cells=[...tr.children];const ageIndex=[...table.querySelectorAll('thead th')].findIndex(h=>h.textContent.trim()==='IDADE');
  if(ageIndex>=0&&cells[ageIndex])cells[ageIndex].insertAdjacentHTML('afterend','<td>'+esc(birth(x))+'</td>');
  const reserveIdx=[...table.querySelectorAll('thead th')].findIndex(h=>h.textContent.includes('RESERVAS UTI'));
- const td=tr.children[reserveIdx];if(td){const p=decode(x.map_reservations);const txt=p.base;td.innerHTML=td.innerHTML.replace(/\[\[HSJ_EXTRA_V2:[A-Za-z0-9+/=]+\]\]/g,'');td.insertAdjacentHTML('beforeend','<div style="margin-top:5px"><b>Internação antecipada:</b> '+esc(p.pre||'Não informado')+'</div><div><b>Observações:</b> '+esc(p.notes||'—')+'</div>');}
+ const td=tr.children[reserveIdx];if(td){
+   const p=decode(x.map_reservations);
+   const value=String(p.pre||'').trim().toUpperCase();
+   const formatted=value==='NAO'?'NÃO':value;
+   const badgeClass=formatted==='SIM'?'warn':formatted==='NÃO'?'ok':'bad';
+   const badgeText=formatted==='SIM'||formatted==='NÃO'?formatted:'NÃO INFORMADO';
+   td.innerHTML=td.innerHTML.replace(/\[\[HSJ_EXTRA_V2:[A-Za-z0-9+/=]+\]\]/g,'');
+   // A mesma marcação visual e as mesmas cores dos selos UTI / SANGUE.
+   td.insertAdjacentHTML('beforeend',
+     '<div style="margin-top:5px"><span class="pill '+badgeClass+'" style="margin-right:4px">Internação antecipada: '+esc(badgeText)+'</span></div>'+
+     '<div style="margin-top:3px"><b>Observações:</b> '+esc(p.notes||'—')+'</div>');
+  }
  });
  return r;
 };
