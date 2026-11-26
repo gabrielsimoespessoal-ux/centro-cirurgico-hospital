@@ -42,32 +42,13 @@ window.editMapPatient=function(id){
 };
 
 window.saveMapPatientV17=async function(id){
-  // Não permitir que o salvamento legado ignore a resposta obrigatória de
-  // internação antecipada. A rotina completa preserva todos os campos.
-  if(typeof window.hsjSaveMapExtraV2==='function')
-    return window.hsjSaveMapExtraV2(id);
-  alert('O formulário completo ainda não carregou. Atualize a página para informar UTI, sangue e internação antecipada.');
-  return;
-  const room=document.getElementById('f_map_room')?.value||'';
-  const date=document.getElementById('f_surgery_date')?.value||'';
-  const resp=document.getElementById('f_map_responsible')?.value||'';
-  const uti=document.getElementById('f_map_uti')?.value||'';
-  const sangue=document.getElementById('f_map_sangue')?.value||'';
-  const obs=document.getElementById('f_map_obs')?.value||'';
-  if(!room)return alert('Selecione a sala cirúrgica.');
-  if(!date)return alert('Informe a data da cirurgia.');
-  if(!uti)return alert('Informe obrigatoriamente se há Reserva de UTI: SIM ou NÃO.');
-  if(!sangue)return alert('Informe obrigatoriamente se há Reserva de Sangue: SIM ou NÃO.');
-  await api('/rest/v1/surgeries?id=eq.'+id,{method:'PATCH',body:JSON.stringify({
-    map_room:room,
-    surgery_date:date,
-    map_responsible:resp||null,
-    map_reservations:composeReservationsV17(uti,sangue,obs),
-    updated_by:uid
-  })});
-  document.getElementById('modal').innerHTML='';
-  await load();
-  renderMap();
+  // O formulário completo contém os três campos obrigatórios; a rotina
+  // antiga nunca deve salvar sem a internação antecipada.
+  if(typeof window.hsjSaveMapExtraV2!=='function'){
+    alert('O formulário completo ainda não carregou. Atualize a página para informar UTI, sangue e internação antecipada.');
+    return;
+  }
+  return window.hsjSaveMapExtraV2(id);
 };
 
 window.renderMap=function(){
